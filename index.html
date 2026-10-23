@@ -15,6 +15,15 @@
     .custom-scroll::-webkit-scrollbar {
       display: none;
     }
+    /* 버튼 터치 시 크기 변형 완전 방지 (고정 크기 유지) */
+    button, .btn, .bgm-card, .work-status-btn {
+      transform: none !important;
+      transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease !important;
+    }
+    button:active, .btn:active, .bgm-card:active {
+      opacity: 0.85;
+      transform: none !important;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased overflow-hidden">
@@ -36,7 +45,7 @@
 
     <!-- 마음건강 마일리지 배지 -->
     <div id="dolboni-header-points-badge" class="cursor-pointer" onclick="openPointsHistoryModal()">
-      <div class="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500/15 border border-amber-500/40 rounded-full text-amber-400 font-extrabold text-sm shadow-md active:scale-95 transition-all">
+      <div class="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500/15 border border-amber-500/40 rounded-full text-amber-400 font-extrabold text-sm shadow-md">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
         </svg>
@@ -51,87 +60,87 @@
     <!-- TAB 1: 회복 쉼터 (홈 / 4-7-8 이완 호흡) -->
     <section id="tab-shelter" class="space-y-4">
       
-      <!-- 1. 큰 버튼: 음성 안내 및 힐링 사운드 선택 패널 -->
+      <!-- 1. 자연 음성 안내 및 힐링 사운드 선택 패널 (크기 불변) -->
       <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-md space-y-3">
         
-        <!-- 음성 안내 대형 토글 버튼 -->
-        <button type="button" id="btn-voice-toggle" onclick="toggleVoiceGuidance()" class="w-full py-3.5 px-4 rounded-2xl flex items-center justify-between bg-emerald-500/20 border-2 border-emerald-500/50 text-emerald-300 font-black text-sm shadow-sm active:scale-98 transition">
+        <!-- 차분한 음성 안내 대형 토글 버튼 (크기 고정) -->
+        <button type="button" id="btn-voice-toggle" onclick="toggleVoiceGuidance()" class="w-full h-14 px-4 rounded-2xl flex items-center justify-between bg-emerald-500/20 border-2 border-emerald-500 text-emerald-300 font-black text-sm shadow-sm">
           <div class="flex items-center gap-2.5">
-            <span id="voice-icon" class="text-xl">🗣️</span>
+            <span id="voice-icon" class="text-2xl">🗣️</span>
             <div class="text-left">
-              <p class="font-extrabold text-sm" id="voice-title">한국어 음성 안내 켜짐</p>
-              <p class="text-[11px] text-emerald-400/80 font-normal">들숨/멈춤/날숨을 말로 안내합니다</p>
+              <p class="font-extrabold text-sm" id="voice-title">부드러운 음성 안내 켜짐</p>
+              <p class="text-[11px] text-emerald-400/90 font-normal">따뜻한 실제 음성으로 호흡을 이끕니다</p>
             </div>
           </div>
-          <span id="voice-badge" class="px-2.5 py-1 rounded-full bg-emerald-500 text-slate-950 font-black text-xs">
+          <span id="voice-badge" class="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 font-black text-xs">
             ON
           </span>
         </button>
 
-        <!-- 배경 사운드 대형 2x2 카드 선택기 -->
+        <!-- 배경 사운드 4종 (시냇물 / 빗소리 / 새소리 / 명상음악 / 무음) 2x2 그리드 -->
         <div>
           <div class="flex justify-between items-center mb-2 px-1">
-            <span class="text-xs font-bold text-slate-400">힐링 배경음 선택 (호흡 중 언제든 변경 가능)</span>
-            <span id="now-playing-label" class="text-xs font-extrabold text-amber-400">🔔 쇠그릇 재생 중</span>
+            <span class="text-xs font-bold text-slate-400">힐링 배경음 선택 (호흡 중 실시간 변경 가능)</span>
+            <span id="now-playing-label" class="text-xs font-extrabold text-amber-400">🌊 시냇물 소리</span>
           </div>
 
           <div class="grid grid-cols-2 gap-2 text-xs font-bold">
-            <!-- 1. 쇠그릇 (티베탄 싱잉볼) -->
-            <button type="button" onclick="selectBgm('bowl', this)" class="bgm-card py-3.5 px-3 rounded-2xl border-2 border-amber-500 bg-amber-500/20 text-amber-300 flex items-center gap-2.5 shadow-sm active:scale-95 transition">
-              <span class="text-2xl">🔔</span>
-              <div class="text-left">
-                <p class="font-extrabold text-sm">쇠그릇</p>
-                <p class="text-[10px] text-slate-400 font-normal">티베탄 싱잉볼</p>
-              </div>
-            </button>
-
-            <!-- 2. 계곡 물소리 -->
-            <button type="button" onclick="selectBgm('stream', this)" class="bgm-card py-3.5 px-3 rounded-2xl border border-slate-800 bg-slate-800/80 text-slate-300 flex items-center gap-2.5 shadow-sm active:scale-95 transition">
+            <!-- 1. 시냇물 소리 -->
+            <button type="button" onclick="selectBgm('stream', this)" class="bgm-card h-14 px-3 rounded-2xl border-2 border-amber-500 bg-amber-500/20 text-amber-300 flex items-center gap-2.5 shadow-sm">
               <span class="text-2xl">🌊</span>
               <div class="text-left">
-                <p class="font-extrabold text-sm">계곡 물소리</p>
-                <p class="text-[10px] text-slate-400 font-normal">시원한 시냇물</p>
+                <p class="font-extrabold text-sm">시냇물 소리</p>
+                <p class="text-[10px] text-slate-400 font-normal">맑은 계곡 물소리</p>
               </div>
             </button>
 
-            <!-- 3. 숲속 새소리 -->
-            <button type="button" onclick="selectBgm('birds', this)" class="bgm-card py-3.5 px-3 rounded-2xl border border-slate-800 bg-slate-800/80 text-slate-300 flex items-center gap-2.5 shadow-sm active:scale-95 transition">
+            <!-- 2. 빗소리 -->
+            <button type="button" onclick="selectBgm('rain', this)" class="bgm-card h-14 px-3 rounded-2xl border border-slate-800 bg-slate-800/80 text-slate-300 flex items-center gap-2.5 shadow-sm">
+              <span class="text-2xl">🌧️</span>
+              <div class="text-left">
+                <p class="font-extrabold text-sm">빗소리</p>
+                <p class="text-[10px] text-slate-400 font-normal">차분한 빗방울</p>
+              </div>
+            </button>
+
+            <!-- 3. 새소리 -->
+            <button type="button" onclick="selectBgm('birds', this)" class="bgm-card h-14 px-3 rounded-2xl border border-slate-800 bg-slate-800/80 text-slate-300 flex items-center gap-2.5 shadow-sm">
               <span class="text-2xl">🌲</span>
               <div class="text-left">
-                <p class="font-extrabold text-sm">숲속 새소리</p>
-                <p class="text-[10px] text-slate-400 font-normal">아침 숲 지저귐</p>
+                <p class="font-extrabold text-sm">새소리</p>
+                <p class="text-[10px] text-slate-400 font-normal">아침 숲속 지저귐</p>
               </div>
             </button>
 
             <!-- 4. 명상음악 -->
-            <button type="button" onclick="selectBgm('music', this)" class="bgm-card py-3.5 px-3 rounded-2xl border border-slate-800 bg-slate-800/80 text-slate-300 flex items-center gap-2.5 shadow-sm active:scale-95 transition">
+            <button type="button" onclick="selectBgm('music', this)" class="bgm-card h-14 px-3 rounded-2xl border border-slate-800 bg-slate-800/80 text-slate-300 flex items-center gap-2.5 shadow-sm">
               <span class="text-2xl">🎵</span>
               <div class="text-left">
                 <p class="font-extrabold text-sm">명상음악</p>
-                <p class="text-[10px] text-slate-400 font-normal">432Hz 힐링 패드</p>
+                <p class="text-[10px] text-slate-400 font-normal">평온한 힐링 선율</p>
               </div>
             </button>
           </div>
 
           <!-- 무음 버튼 -->
-          <button type="button" onclick="selectBgm('mute', this)" class="bgm-card mt-2 w-full py-2.5 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-400 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition">
+          <button type="button" onclick="selectBgm('mute', this)" class="bgm-card mt-2 w-full h-11 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-400 text-xs font-bold flex items-center justify-center gap-1.5">
             <span>🔇</span>
             <span>배경음 끄기 (무음)</span>
           </button>
         </div>
       </div>
 
-      <!-- 2. 근무 상황 선택 (큼직한 3개 버튼) -->
+      <!-- 2. 근무 상황 선택 (크기 고정 3개 버튼) -->
       <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-sm">
         <label class="text-xs font-bold text-slate-400 mb-2 block">근무 상황 선택</label>
         <div class="grid grid-cols-3 gap-2.5 text-xs font-bold">
-          <button type="button" onclick="selectWorkStatus('after_dispatch', this)" class="work-status-btn py-3 rounded-2xl border-2 border-blue-500 bg-blue-600/30 text-blue-200">
+          <button type="button" onclick="selectWorkStatus('after_dispatch', this)" class="work-status-btn h-12 rounded-2xl border-2 border-blue-500 bg-blue-600/30 text-blue-200">
             🚒 출동 직후
           </button>
-          <button type="button" onclick="selectWorkStatus('night_standby', this)" class="work-status-btn py-3 rounded-2xl border border-slate-800 bg-slate-800/60 text-slate-400">
+          <button type="button" onclick="selectWorkStatus('night_standby', this)" class="work-status-btn h-12 rounded-2xl border border-slate-800 bg-slate-800/60 text-slate-400">
             🌙 야간 대기
           </button>
-          <button type="button" onclick="selectWorkStatus('off_duty', this)" class="work-status-btn py-3 rounded-2xl border border-slate-800 bg-slate-800/60 text-slate-400">
+          <button type="button" onclick="selectWorkStatus('off_duty', this)" class="work-status-btn h-12 rounded-2xl border border-slate-800 bg-slate-800/60 text-slate-400">
             ☕ 비번/휴식
           </button>
         </div>
@@ -161,13 +170,13 @@
           </div>
         </div>
 
-        <!-- 하단 시작/종료 대형 컨트롤 버튼 -->
+        <!-- 하단 시작/종료 대형 컨트롤 버튼 (크기 변형 없음) -->
         <div class="flex items-center justify-center gap-3 mt-1">
-          <button id="btn-start-session" onclick="toggleBreathingSession()" class="flex-1 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-lg shadow-xl shadow-blue-600/40 active:scale-95 transition-all">
+          <button id="btn-start-session" onclick="toggleBreathingSession()" class="flex-1 h-14 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-lg shadow-xl shadow-blue-600/40">
             호흡 시작하기
           </button>
 
-          <button id="btn-vibrate-toggle" onclick="toggleHaptics()" title="진동 켜기/끄기" class="p-4 rounded-2xl bg-slate-800 border border-slate-700 text-amber-400 hover:text-white active:scale-95 transition">
+          <button id="btn-vibrate-toggle" onclick="toggleHaptics()" title="진동 켜기/끄기" class="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 text-amber-400 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
               <path d="M16 19H8a1 1 0 01-1-1V6a1 1 0 011-1h8a1 1 0 011 1v12a1 1 0 01-1 1zM3 9a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zm0 6a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zm18-6a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1zm0 6a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1z" />
             </svg>
@@ -224,11 +233,11 @@
         <form id="form-counsel-request" onsubmit="submitCounselRequest(event)" class="mt-4 space-y-3 text-xs">
           <div>
             <label class="block font-bold text-slate-400 mb-1">연락처 (안내 문자용)</label>
-            <input type="tel" id="counsel-phone" placeholder="010-0000-0000" required class="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none focus:border-indigo-500">
+            <input type="tel" id="counsel-phone" placeholder="010-0000-0000" required class="w-full h-12 px-4 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none focus:border-indigo-500">
           </div>
           <div>
             <label class="block font-bold text-slate-400 mb-1">희망 시간대</label>
-            <select id="counsel-time" class="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none focus:border-indigo-500">
+            <select id="counsel-time" class="w-full h-12 px-4 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none focus:border-indigo-500">
               <option value="주간근무 중 편한 시간">주간근무 중 편한 시간</option>
               <option value="비번/휴무일 대면">비번/휴무일 대면 상담</option>
               <option value="야간 대기 중 유선">야간 대기 중 유선/전화 상담</option>
@@ -236,9 +245,9 @@
           </div>
           <div>
             <label class="block font-bold text-slate-400 mb-1">남기실 말씀 (선택)</label>
-            <textarea id="counsel-note" rows="2" placeholder="출동 충격 완화, 수면 문제 등 간단히 적어주세요" class="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none focus:border-indigo-500"></textarea>
+            <textarea id="counsel-note" rows="2" placeholder="출동 충격 완화, 수면 문제 등 간단히 적어주세요" class="w-full p-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none focus:border-indigo-500"></textarea>
           </div>
-          <button type="submit" class="w-full py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 transition">
+          <button type="submit" class="w-full h-14 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 transition">
             비공개 상담 신청 접수하기
           </button>
         </form>
@@ -272,8 +281,8 @@
             소방공무원 명부에 없는 분은 소방서에서 발급받은 6자리 인증 코드를 입력하여 관서 인증을 완료할 수 있습니다.
           </p>
           <div class="mt-3 flex gap-2">
-            <input type="text" id="invite-code-input" placeholder="인증 코드 6자리" maxlength="6" class="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono uppercase text-center focus:outline-none focus:border-amber-400">
-            <button type="button" onclick="verifyCivilianInviteCode()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black transition">
+            <input type="text" id="invite-code-input" placeholder="인증 코드 6자리" maxlength="6" class="flex-1 h-12 px-4 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono uppercase text-center focus:outline-none focus:border-amber-400">
+            <button type="button" onclick="verifyCivilianInviteCode()" class="w-20 h-12 rounded-xl bg-amber-500 text-slate-950 font-black">
               인증
             </button>
           </div>
@@ -305,7 +314,7 @@
         </div>
       </div>
 
-      <button type="button" onclick="confirmPostCheckinAndSave()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">
+      <button type="button" onclick="confirmPostCheckinAndSave()" class="w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-base shadow-lg shadow-emerald-500/20">
         완료하고 +50P 마일리지 받기
       </button>
     </div>
@@ -313,25 +322,25 @@
 
   <!-- ==================== 하단 네이티브 탭 네비게이션 ==================== -->
   <nav class="fixed bottom-0 inset-x-0 bg-slate-900/95 border-t border-slate-800 backdrop-blur-xl px-4 py-2.5 flex items-center justify-around z-40">
-    <button onclick="switchTab('shelter')" class="tab-btn flex flex-col items-center gap-1 text-blue-400 active:scale-90 transition">
+    <button onclick="switchTab('shelter')" class="tab-btn flex flex-col items-center gap-1 text-blue-400">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
       </svg>
       <span class="text-[11px] font-extrabold">회복 쉼터</span>
     </button>
-    <button onclick="switchTab('records')" class="tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-90 transition">
+    <button onclick="switchTab('records')" class="tab-btn flex flex-col items-center gap-1 text-slate-400">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
       <span class="text-[11px] font-extrabold">회복 기록</span>
     </button>
-    <button onclick="switchTab('counsel')" class="tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-90 transition">
+    <button onclick="switchTab('counsel')" class="tab-btn flex flex-col items-center gap-1 text-slate-400">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
       </svg>
       <span class="text-[11px] font-extrabold">상담 신청</span>
     </button>
-    <button onclick="switchTab('profile')" class="tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-90 transition">
+    <button onclick="switchTab('profile')" class="tab-btn flex flex-col items-center gap-1 text-slate-400">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
