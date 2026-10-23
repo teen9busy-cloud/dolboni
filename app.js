@@ -40,6 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
   updateHeaderPoints(AppState.user.totalPoints);
   renderTeamStatusMockCard();
 
+  // 브라우저 네트워크 캐시에 기본 음원 즉시 사전 다운로드
+  try {
+    fetch('audio/bgm_music.mp3').catch(() => {});
+    fetch('audio/voice_intro.mp3').catch(() => {});
+    fetch('audio/voice_inhale.mp3').catch(() => {});
+  } catch(e) {}
+
   // 첫 터치 시 AudioContext 활성화 및 핵심 음성/사운드 즉시 프리로드
   const unlockAndPreload = () => {
     initAudioEngine();
@@ -59,12 +66,12 @@ function initAudioEngine() {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     AppState.audioCtx = new AudioCtx();
 
-    // 배경음 볼륨 노드 (기본 0.45)
+    // 배경음 볼륨 노드 (0.50 - 편안한 볼륨 유지)
     AppState.bgmGain = AppState.audioCtx.createGain();
-    AppState.bgmGain.gain.setValueAtTime(0.45, AppState.audioCtx.currentTime);
+    AppState.bgmGain.gain.setValueAtTime(0.50, AppState.audioCtx.currentTime);
     AppState.bgmGain.connect(AppState.audioCtx.destination);
 
-    // 음성 볼륨 노드 (기본 1.0 - 또렷하게)
+    // 음성 볼륨 노드 (1.0 - 또렷하게 동시 출력)
     AppState.voiceGain = AppState.audioCtx.createGain();
     AppState.voiceGain.gain.setValueAtTime(1.0, AppState.audioCtx.currentTime);
     AppState.voiceGain.connect(AppState.audioCtx.destination);
@@ -111,7 +118,7 @@ function preloadAudio() {
 }
 
 // ------------------------------------------------------------------------------
-// 4. 따뜻한 명상 성우 음성 재생 (BGM과 동시 출력 + 부드러운 오토 덕킹)
+// 4. 따뜻한 명상 성우 음성 재생 (BGM과 끊김 없이 100% 동시 출력)
 // ------------------------------------------------------------------------------
 async function playVoice(filename) {
   if (!AppState.voiceEnabled) return;
@@ -123,15 +130,7 @@ async function playVoice(filename) {
     const buffer = await loadAudioBuffer(url);
     if (!buffer) return;
 
-    // 성우 목소리가 나올 때 BGM 볼륨을 살짝 낮춰주는 오토 덕킹 (0.45 -> 0.2)
-    if (AppState.bgmGain && AppState.currentBgm !== 'mute') {
-      const now = AppState.audioCtx.currentTime;
-      AppState.bgmGain.gain.cancelScheduledValues(now);
-      AppState.bgmGain.gain.linearRampToValueAtTime(0.2, now + 0.3);
-      // 음성 종료 후 다시 BGM 볼륨 회복 (0.2 -> 0.45)
-      AppState.bgmGain.gain.linearRampToValueAtTime(0.45, now + buffer.duration + 0.5);
-    }
-
+    // 모바일 브라우저(사파리/크롬) 음원 소실 방지: 덕킹 없이 두 채널 완벽 병렬 동시 믹싱
     const source = AppState.audioCtx.createBufferSource();
     source.buffer = buffer;
     source.connect(AppState.voiceGain);
