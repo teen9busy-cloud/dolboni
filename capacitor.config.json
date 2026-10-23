@@ -1,0 +1,16 @@
+{
+  "appId": "kr.co.valueplus.dolboni",
+  "appName": "돌보니",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "Haptics": {},
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0f172a"
+    }
+  }
+}
