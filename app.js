@@ -25,7 +25,7 @@ const AppState = {
   isBreathing: false,
   timerInterval: null,
   voiceEnabled: true,       // 음성 안내 활성화
-  currentBgm: 'stream',     // 'stream' | 'rain' | 'birds' | 'music' | 'mute'
+  currentBgm: 'music',      // 기본 선택: 'music' (명상음악)
   hapticsEnabled: true,
   audioCtx: null,
   bgmGain: null,
@@ -102,8 +102,10 @@ function preloadAudio() {
     'audio/voice_hold.mp3',
     'audio/voice_exhale.mp3',
     'audio/voice_complete.mp3',
-    'audio/bgm_stream.ogg',
-    'audio/bgm_rain.ogg',
+    'audio/bgm_music.mp3',
+    'audio/bgm_rain.mp3',
+    'audio/bgm_birds.mp3',
+    'audio/bgm_stream.mp3',
   ];
   preloadList.forEach(url => loadAudioBuffer(url));
 }
@@ -161,20 +163,20 @@ function toggleVoiceGuidance() {
 }
 
 // ------------------------------------------------------------------------------
-// 5. 5대 사운드스케이프 (시냇물 / 빗소리 / 새소리 / 명상음악 / 무음) 루프 재생
+// 5. 5대 사운드스케이프 (명상음악 / 빗소리 / 새소리 / 시냇물 / 무음) 루프 재생
 // ------------------------------------------------------------------------------
 const BGM_FILES = {
-  stream: 'audio/bgm_stream.ogg',
-  rain: 'audio/bgm_rain.ogg',
-  birds: 'audio/bgm_birds.ogg',
   music: 'audio/bgm_music.mp3',
+  rain: 'audio/bgm_rain.mp3',
+  birds: 'audio/bgm_birds.mp3',
+  stream: 'audio/bgm_stream.mp3',
 };
 
 const BGM_NAMES = {
-  stream: '🌊 시냇물 소리',
+  music: '🎵 명상음악',
   rain: '🌧️ 빗소리',
   birds: '🌲 새소리',
-  music: '🎵 명상음악',
+  stream: '🌊 시냇물 소리',
   mute: '🔇 무음',
 };
 
@@ -275,9 +277,11 @@ function startBreathingSession() {
   btn.classList.replace('from-blue-600', 'from-rose-600');
   btn.classList.replace('to-indigo-600', 'to-rose-700');
 
-  // 배경음 재생 (무음이 아닌 경우)
+  // 배경음 재생 (무음이 아니고 이미 재생 중이 아니라면 즉시 시작)
   if (AppState.currentBgm !== 'mute') {
-    startBgm(AppState.currentBgm);
+    if (!AppState.bgmSource) {
+      startBgm(AppState.currentBgm);
+    }
   }
 
   runBreathingCycle();

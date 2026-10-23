@@ -76,14 +76,14 @@
             <span id="voice-icon">🗣️</span>
             <span id="voice-title">성우 음성 ON</span>
           </button>
-          <span id="now-playing-label" class="text-[11px] font-bold text-amber-400">🌊 시냇물 소리</span>
+          <span id="now-playing-label" class="text-[11px] font-bold text-amber-400">🎵 명상음악</span>
         </div>
 
-        <!-- 5대 사운드 그리드 (한눈에 터치) -->
+        <!-- 5대 사운드 그리드 (명상음악, 빗소리, 새소리, 시냇물, 무음 순) -->
         <div class="grid grid-cols-5 gap-1 text-[11px] font-bold">
-          <button type="button" onclick="selectBgm('stream', this)" class="bgm-btn py-2 px-1 rounded-xl border-2 border-amber-500 bg-amber-500/20 text-amber-300 flex flex-col items-center">
-            <span class="text-base">🌊</span>
-            <span class="text-[10px] mt-0.5">시냇물</span>
+          <button type="button" onclick="selectBgm('music', this)" class="bgm-btn py-2 px-1 rounded-xl border-2 border-amber-500 bg-amber-500/20 text-amber-300 flex flex-col items-center">
+            <span class="text-base">🎵</span>
+            <span class="text-[10px] mt-0.5">명상음악</span>
           </button>
           <button type="button" onclick="selectBgm('rain', this)" class="bgm-btn py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-300 flex flex-col items-center">
             <span class="text-base">🌧️</span>
@@ -93,9 +93,9 @@
             <span class="text-base">🌲</span>
             <span class="text-[10px] mt-0.5">새소리</span>
           </button>
-          <button type="button" onclick="selectBgm('music', this)" class="bgm-btn py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-300 flex flex-col items-center">
-            <span class="text-base">🎵</span>
-            <span class="text-[10px] mt-0.5">명상음악</span>
+          <button type="button" onclick="selectBgm('stream', this)" class="bgm-btn py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-300 flex flex-col items-center">
+            <span class="text-base">🌊</span>
+            <span class="text-[10px] mt-0.5">시냇물</span>
           </button>
           <button type="button" onclick="selectBgm('mute', this)" class="bgm-btn py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-400 flex flex-col items-center">
             <span class="text-base">🔇</span>
