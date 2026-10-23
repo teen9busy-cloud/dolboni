@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>돌보니 (Dolboni) - 소방 마음건강 마일리지</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            },
+            fire: {
+              500: '#f97316',
+              600: '#ea580c',
+            }
+          },
+          animation: {
+            'breathe-in': 'breatheIn 4s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+            'breathe-hold': 'breatheHold 7s linear forwards',
+            'breathe-out': 'breatheOut 8s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+          },
+          keyframes: {
+            breatheIn: {
+              '0%': { transform: 'scale(0.85)', opacity: '0.7' },
+              '100%': { transform: 'scale(1.35)', opacity: '1' }
+            },
+            breatheHold: {
+              '0%': { transform: 'scale(1.35)', opacity: '1' },
+              '100%': { transform: 'scale(1.35)', opacity: '1' }
+            },
+            breatheOut: {
+              '0%': { transform: 'scale(1.35)', opacity: '1' },
+              '100%': { transform: 'scale(0.85)', opacity: '0.7' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* iOS Safe Area & Native Scroll Feel */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased overflow-hidden">
+
+  <!-- ==================== 상단 네이티브 헤더 ==================== -->
+  <header class="px-5 pt-3 pb-3 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white font-black text-sm">
+        돌
+      </div>
+      <div>
+        <h1 class="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
+          돌보니
+          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400">1.0</span>
+        </h1>
+        <p id="user-affiliation-label" class="text-[11px] text-slate-400 font-medium">진주소방서 상대센터 1팀</p>
+      </div>
+    </div>
+
+    <!-- 마음건강 마일리지 배지 -->
+    <div id="dolboni-header-points-badge" class="cursor-pointer" onclick="openPointsHistoryModal()">
+      <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 font-bold text-xs shadow-sm hover:scale-105 active:scale-95 transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        <span id="header-points-value">350 P</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 메인 뷰 컨테이너 ==================== -->
+  <main class="flex-1 overflow-y-auto custom-scroll pb-24 px-4 pt-4">
+
+    <!-- TAB 1: 회복 쉼터 (홈 / 4-7-8 이완 호흡) -->
+    <section id="tab-shelter" class="space-y-5">
+      <!-- 출동 후 상태 선택 -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+        <label class="text-xs font-bold text-slate-400 mb-2 block">현재 근무 상황</label>
+        <div class="grid grid-cols-3 gap-2 text-xs font-semibold">
+          <button type="button" onclick="selectWorkStatus('after_dispatch', this)" class="work-status-btn py-2.5 rounded-xl border border-blue-500/40 bg-blue-600/20 text-blue-300">
+            🚒 출동 직후
+          </button>
+          <button type="button" onclick="selectWorkStatus('night_standby', this)" class="work-status-btn py-2.5 rounded-xl border border-slate-800 bg-slate-800/60 text-slate-400">
+            🌙 야간 대기
+          </button>
+          <button type="button" onclick="selectWorkStatus('off_duty', this)" class="work-status-btn py-2.5 rounded-xl border border-slate-800 bg-slate-800/60 text-slate-400">
+            ☕ 비번/휴식
+          </button>
+        </div>
+      </div>
+
+      <!-- 호흡 가이드 및 원형 인터랙션 카드 -->
+      <div class="bg-gradient-to-b from-slate-900 to-slate-900/70 border border-slate-800/80 rounded-3xl p-6 text-center shadow-xl relative overflow-hidden">
+        <!-- 상단 가이드 텍스트 -->
+        <div class="mb-4">
+          <span class="text-xs font-bold text-blue-400 uppercase tracking-wider bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">
+            급성 스트레스 이완 가이드
+          </span>
+          <h2 id="breathe-instruction" class="text-xl font-black text-white mt-3">
+            호흡 준비
+          </h2>
+          <p id="breathe-subtext" class="text-xs text-slate-400 mt-1">
+            4초 들숨, 7초 멈춤, 8초 날숨으로 심박수를 안정시킵니다
+          </p>
+        </div>
+
+        <!-- 중앙 호흡 애니메이션 원 -->
+        <div class="relative w-56 h-56 mx-auto my-6 flex items-center justify-center">
+          <!-- 외곽 후광 효과 -->
+          <div id="breathe-glow" class="absolute inset-0 rounded-full bg-blue-500/15 blur-2xl transition-all duration-1000 scale-75"></div>
+          
+          <!-- 바깥 테두리 링 -->
+          <div class="absolute inset-2 rounded-full border-2 border-dashed border-slate-700/60"></div>
+
+          <!-- 메인 호흡 원 -->
+          <div id="breathe-circle" class="w-40 h-40 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex flex-col items-center justify-center shadow-2xl shadow-blue-500/40 text-white transform transition-transform duration-700 scale-90">
+            <span id="breathe-phase-text" class="text-lg font-black tracking-tight">시작</span>
+            <span id="breathe-timer" class="text-3xl font-extrabold mt-0.5">4-7-8</span>
+          </div>
+        </div>
+
+        <!-- 하단 시작/종료 컨트롤 버튼 -->
+        <div class="flex items-center justify-center gap-3">
+          <button id="btn-sound-toggle" onclick="toggleAudioChime()" class="p-3.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition">
+            <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            </svg>
+          </button>
+          
+          <button id="btn-start-session" onclick="toggleBreathingSession()" class="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-base shadow-lg shadow-blue-600/30 active:scale-95 transition-all">
+            호흡 시작하기
+          </button>
+
+          <button id="btn-vibrate-toggle" onclick="toggleHaptics()" class="p-3.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 19H8a1 1 0 01-1-1V6a1 1 0 011-1h8a1 1 0 011 1v12a1 1 0 01-1 1zM3 9a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zm0 6a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zm18-6a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1zm0 6a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 사전 긴장도 체크 (호흡 전 간단 슬라이더) -->
+      <div id="pre-checkin-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div class="flex justify-between items-center mb-2">
+          <label class="text-xs font-bold text-slate-300">현재 긴장도 수준 (세션 전)</label>
+          <span id="pre-arousal-val" class="text-sm font-black text-rose-400">7점 (높은 긴장)</span>
+        </div>
+        <input type="range" id="pre-arousal-slider" min="1" max="10" value="7" oninput="updatePreArousalLabel(this.value)" class="w-full accent-rose-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+          <span>1 (완전 편안)</span>
+          <span>5 (보통)</span>
+          <span>10 (극도 긴장)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: 나의 회복 기록 -->
+    <section id="tab-records" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
+        <h3 class="text-sm font-extrabold text-white mb-3 flex items-center gap-2">
+          <span>📊</span> 나의 이번 달 회복 활동
+        </h3>
+        <div class="grid grid-cols-2 gap-3 text-center">
+          <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
+            <p class="text-xs text-slate-400">총 수행 횟수</p>
+            <p class="text-2xl font-black text-blue-400 mt-1">14회</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
+            <p class="text-xs text-slate-400">누적 긴장 완화</p>
+            <p class="text-2xl font-black text-emerald-400 mt-1">-3.4점</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 우리 센터/팀 함께 돌보기 현황 카드 컨테이너 -->
+      <div id="dolboni-team-status-card-container"></div>
+    </section>
+
+    <!-- TAB 3: 찾아가는 상담실 신청 -->
+    <section id="tab-counsel" class="hidden space-y-4">
+      <div class="bg-gradient-to-br from-indigo-950/60 to-slate-900 border border-indigo-500/30 rounded-2xl p-5 shadow-lg">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">🤝</span>
+          <h3 class="text-base font-extrabold text-white">찾아가는 상담실 비공개 신청</h3>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          외상사건 출동, 직무 스트레스, 개인 심리 고민을 전담 상담사와 1:1로 편안하게 나눌 수 있습니다. 
+          <strong class="text-indigo-300">비밀은 법적으로 100% 보장</strong>됩니다.
+        </p>
+
+        <form id="form-counsel-request" onsubmit="submitCounselRequest(event)" class="mt-4 space-y-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-400 mb-1">연락처 (안내 문자용)</label>
+            <input type="tel" id="counsel-phone" placeholder="010-0000-0000" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-400 mb-1">희망 시간대</label>
+            <select id="counsel-time" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none focus:border-indigo-500">
+              <option value="주간근무 중 편한 시간">주간근무 중 편한 시간</option>
+              <option value="비번/휴무일 대면">비번/휴무일 대면 상담</option>
+              <option value="야간 대기 중 유선">야간 대기 중 유선/전화 상담</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-400 mb-1">남기실 말씀 (선택)</label>
+            <textarea id="counsel-note" rows="2" placeholder="출동 충격 완화, 수면 문제 등 간단히 적어주세요" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"></textarea>
+          </div>
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 transition">
+            비공개 상담 신청 접수하기
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- TAB 4: 내 정보 / 공무직 인증 -->
+    <section id="tab-profile" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h3 class="text-sm font-extrabold text-white mb-3">소속 및 계정 관리</h3>
+        <div class="space-y-3 text-xs">
+          <div class="flex justify-between items-center py-2 border-b border-slate-800">
+            <span class="text-slate-400">회원 유형</span>
+            <span id="profile-member-type" class="font-bold text-blue-400">현장 소방공무원</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-slate-800">
+            <span class="text-slate-400">소속 관서</span>
+            <span id="profile-station" class="font-bold text-white">진주소방서</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-slate-800">
+            <span class="text-slate-400">센터 / 팀</span>
+            <span id="profile-center-team" class="font-bold text-white">상대119안전센터 1팀</span>
+          </div>
+        </div>
+
+        <!-- 공무직 / 비공무원 관서 인증 초대코드 등록 카드 -->
+        <div class="mt-5 p-4 rounded-xl bg-slate-800/60 border border-slate-700/60">
+          <h4 class="font-bold text-xs text-amber-300 flex items-center gap-1.5">
+            <span>🏷️</span> 공무직 / 기간제 관서 인증 코드
+          </h4>
+          <p class="text-[11px] text-slate-400 mt-1">
+            소방공무원 명부에 없는 분은 소방서에서 발급받은 6자리 인증 코드를 입력하여 관서 인증을 완료할 수 있습니다.
+          </p>
+          <div class="mt-3 flex gap-2">
+            <input type="text" id="invite-code-input" placeholder="인증 코드 6자리" maxlength="6" class="flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono uppercase text-center focus:outline-none focus:border-amber-400">
+            <button type="button" onclick="verifyCivilianInviteCode()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition">
+              인증
+            </button>
+          </div>
+        </div>
+
+        <!-- 데이터 공유 동의 토글 -->
+        <div class="mt-4 p-4 rounded-xl bg-slate-800/40 border border-slate-800 flex items-center justify-between">
+          <div>
+            <p class="font-bold text-xs text-white">전담 상담사에게 회복 통계 공유</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">상담 시 지난 30일간의 스트레스 추이 열람을 허용합니다</p>
+          </div>
+          <input type="checkbox" id="share-consent-toggle" checked onchange="toggleShareConsent(this.checked)" class="w-5 h-5 accent-blue-500 rounded cursor-pointer">
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== 사후 체크인 팝업 모달 ==================== -->
+  <div id="modal-post-checkin" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in slide-in-from-bottom duration-300">
+      <div class="text-center mb-4">
+        <span class="text-3xl">✨</span>
+        <h3 class="text-lg font-black text-white mt-2">호흡 세션을 마쳤습니다!</h3>
+        <p class="text-xs text-slate-400 mt-1">지금 느껴지는 긴장도 수준을 체크해 주세요</p>
+      </div>
+
+      <div class="my-5 bg-slate-800/80 p-4 rounded-2xl border border-slate-700/60">
+        <div class="flex justify-between items-center mb-2">
+          <label class="text-xs font-bold text-slate-300">호흡 후 긴장도</label>
+          <span id="post-arousal-val" class="text-sm font-black text-emerald-400">3점 (안정됨)</span>
+        </div>
+        <input type="range" id="post-arousal-slider" min="1" max="10" value="3" oninput="updatePostArousalLabel(this.value)" class="w-full accent-emerald-500 bg-slate-700 h-2 rounded-lg cursor-pointer">
+        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+          <span>1 (매우 편안)</span>
+          <span>5 (보통)</span>
+          <span>10 (높은 긴장)</span>
+        </div>
+      </div>
+
+      <button type="button" onclick="confirmPostCheckinAndSave()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-sm shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">
+        완료하고 +50P 마일리지 받기
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 하단 네이티브 탭 네비게이션 ==================== -->
+  <nav class="fixed bottom-0 inset-x-0 bg-slate-900/90 border-t border-slate-800/80 backdrop-blur-lg px-3 py-2 flex items-center justify-around z-40">
+    <button onclick="switchTab('shelter')" class="tab-btn flex flex-col items-center gap-1 text-blue-400 active:scale-90 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+      <span class="text-[10px] font-bold">회복 쉼터</span>
+    </button>
+    <button onclick="switchTab('records')" class="tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-90 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+      <span class="text-[10px] font-bold">회복 기록</span>
+    </button>
+    <button onclick="switchTab('counsel')" class="tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-90 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+      <span class="text-[10px] font-bold">상담 신청</span>
+    </button>
+    <button onclick="switchTab('profile')" class="tab-btn flex flex-col items-center gap-1 text-slate-400 active:scale-90 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+      <span class="text-[10px] font-bold">내 정보</span>
+    </button>
+  </nav>
+
+  <!-- 토스트 컨테이너 -->
+  <div id="dolboni-toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Capacitor 및 앱 로직 스크립트 로드 -->
+  <script src="app.js"></script>
+</body>
+</html>
