@@ -296,5 +296,17 @@
   <div id="dolboni-toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <script src="app.js"></script>
+  <script>
+    // PWA Service Worker 등록 (오프라인 캐싱)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          console.log('[Dolboni] ServiceWorker registered with scope:', reg.scope);
+        }).catch((err) => {
+          console.warn('[Dolboni] ServiceWorker registration failed:', err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
