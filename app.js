@@ -31,6 +31,7 @@ const AppState = {
   bgmGain: null,
   voiceGain: null,
   bgmSource: null,
+  voiceSource: null,
   audioBuffers: {},         // 디코딩된 오디오 버퍼 캐시
   isLoadingAudio: false,
 };
@@ -118,22 +119,46 @@ function preloadAudio() {
 }
 
 // ------------------------------------------------------------------------------
-// 4. 따뜻한 명상 성우 음성 재생 (BGM과 끊김 없이 100% 동시 출력)
+// 4. 따뜻한 명상 성우 음성 재생 (BGM과 끊김 없이 100% 동시 출력 + 음성 중첩 원천 차단)
 // ------------------------------------------------------------------------------
+function stopVoice() {
+  if (AppState.voiceSource) {
+    try {
+      AppState.voiceSource.stop();
+      AppState.voiceSource.disconnect();
+    } catch (e) {}
+    AppState.voiceSource = null;
+  }
+}
+
 async function playVoice(filename) {
   if (!AppState.voiceEnabled) return;
   initAudioEngine();
   if (!AppState.audioCtx) return;
+
+  // 이전 음성이 혹시라도 아직 재생 중이라면 즉시 중단 (단계 간 중첩 원천 차단)
+  stopVoice();
 
   try {
     const url = `audio/${filename}`;
     const buffer = await loadAudioBuffer(url);
     if (!buffer) return;
 
+    // 비동기 로딩 사이 호흡이 중단된 경우 보호
+    if (!AppState.isBreathing && filename !== 'voice_intro.mp3' && filename !== 'voice_complete.mp3') {
+      return;
+    }
+
     // 모바일 브라우저(사파리/크롬) 음원 소실 방지: 덕킹 없이 두 채널 완벽 병렬 동시 믹싱
     const source = AppState.audioCtx.createBufferSource();
     source.buffer = buffer;
     source.connect(AppState.voiceGain);
+    source.onended = () => {
+      if (AppState.voiceSource === source) {
+        AppState.voiceSource = null;
+      }
+    };
+    AppState.voiceSource = source;
     source.start(0);
   } catch (err) {
     console.warn('PlayVoice error:', err);
@@ -155,6 +180,7 @@ function toggleVoiceGuidance() {
 
     playVoice('voice_intro.mp3');
   } else {
+    stopVoice();
     btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-bold text-xs';
     icon.textContent = '🔇';
     title.textContent = '성우 음성 OFF';
