@@ -81,22 +81,17 @@ function toggleVoiceGuidance() {
   const btn = document.getElementById('btn-voice-toggle');
   const icon = document.getElementById('voice-icon');
   const title = document.getElementById('voice-title');
-  const badge = document.getElementById('voice-badge');
 
   if (AppState.voiceEnabled) {
-    btn.className = 'w-full h-14 px-4 rounded-2xl flex items-center justify-between bg-emerald-500/20 border-2 border-emerald-500 text-emerald-300 font-black text-sm shadow-sm';
+    btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/60 text-emerald-300 font-extrabold text-xs';
     icon.textContent = '🗣️';
-    title.textContent = '부드러운 음성 안내 켜짐';
-    badge.className = 'px-3 py-1 rounded-full bg-emerald-500 text-slate-950 font-black text-xs';
-    badge.textContent = 'ON';
+    title.textContent = '성우 음성 ON';
 
     playVoice('voice_intro.mp3');
   } else {
-    btn.className = 'w-full h-14 px-4 rounded-2xl flex items-center justify-between bg-slate-800/80 border border-slate-700 text-slate-400 font-bold text-sm shadow-sm';
+    btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-bold text-xs';
     icon.textContent = '🔇';
-    title.textContent = '음성 안내 꺼짐';
-    badge.className = 'px-3 py-1 rounded-full bg-slate-700 text-slate-400 font-bold text-xs';
-    badge.textContent = 'OFF';
+    title.textContent = '성우 음성 OFF';
 
     if (AppState.voiceAudio) AppState.voiceAudio.pause();
   }
@@ -123,17 +118,17 @@ const BGM_NAMES = {
 function selectBgm(type, btn) {
   AppState.currentBgm = type;
 
-  // 카드 스타일 초기화 (크기 변형 없음)
-  document.querySelectorAll('.bgm-card').forEach(b => {
-    b.className = 'bgm-card h-14 px-3 rounded-2xl border border-slate-800 bg-slate-800/80 text-slate-300 flex items-center gap-2.5 shadow-sm';
+  // 버튼 스타일 초기화 (크기 변형 없음)
+  document.querySelectorAll('.bgm-btn').forEach(b => {
+    b.className = 'bgm-btn py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-300 flex flex-col items-center';
   });
 
   if (type === 'mute') {
-    btn.className = 'bgm-card mt-2 w-full h-11 rounded-xl border-2 border-rose-500/60 bg-rose-500/20 text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5';
+    btn.className = 'bgm-btn py-2 px-1 rounded-xl border-2 border-rose-500/80 bg-rose-500/20 text-rose-300 flex flex-col items-center';
     document.getElementById('now-playing-label').textContent = '🔇 무음';
     stopBgm();
   } else {
-    btn.className = 'bgm-card h-14 px-3 rounded-2xl border-2 border-amber-500 bg-amber-500/20 text-amber-300 flex items-center gap-2.5 shadow-sm';
+    btn.className = 'bgm-btn py-2 px-1 rounded-xl border-2 border-amber-500 bg-amber-500/20 text-amber-300 flex flex-col items-center';
     document.getElementById('now-playing-label').textContent = BGM_NAMES[type] || '';
     
     // 호흡 중이거나 미리듣기일 때 즉각 재생
