@@ -21,29 +21,6 @@
               600: '#2563eb',
               700: '#1d4ed8',
               900: '#1e3a8a',
-            },
-            fire: {
-              500: '#f97316',
-              600: '#ea580c',
-            }
-          },
-          animation: {
-            'breathe-in': 'breatheIn 4s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-            'breathe-hold': 'breatheHold 7s linear forwards',
-            'breathe-out': 'breatheOut 8s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-          },
-          keyframes: {
-            breatheIn: {
-              '0%': { transform: 'scale(0.85)', opacity: '0.7' },
-              '100%': { transform: 'scale(1.35)', opacity: '1' }
-            },
-            breatheHold: {
-              '0%': { transform: 'scale(1.35)', opacity: '1' },
-              '100%': { transform: 'scale(1.35)', opacity: '1' }
-            },
-            breatheOut: {
-              '0%': { transform: 'scale(1.35)', opacity: '1' },
-              '100%': { transform: 'scale(0.85)', opacity: '0.7' }
             }
           }
         }
@@ -51,7 +28,6 @@
     }
   </script>
   <style>
-    /* iOS Safe Area & Native Scroll Feel */
     body {
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
@@ -92,70 +68,92 @@
   </header>
 
   <!-- ==================== 메인 뷰 컨테이너 ==================== -->
-  <main class="flex-1 overflow-y-auto custom-scroll pb-24 px-4 pt-4">
+  <main class="flex-1 overflow-y-auto custom-scroll pb-28 px-4 pt-4">
 
     <!-- TAB 1: 회복 쉼터 (홈 / 4-7-8 이완 호흡) -->
-    <section id="tab-shelter" class="space-y-5">
+    <section id="tab-shelter" class="space-y-4">
       <!-- 출동 후 상태 선택 -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
-        <label class="text-xs font-bold text-slate-400 mb-2 block">현재 근무 상황</label>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 shadow-sm">
+        <label class="text-[11px] font-bold text-slate-400 mb-1.5 block">현재 근무 상황</label>
         <div class="grid grid-cols-3 gap-2 text-xs font-semibold">
-          <button type="button" onclick="selectWorkStatus('after_dispatch', this)" class="work-status-btn py-2.5 rounded-xl border border-blue-500/40 bg-blue-600/20 text-blue-300">
+          <button type="button" onclick="selectWorkStatus('after_dispatch', this)" class="work-status-btn py-2 rounded-xl border border-blue-500/40 bg-blue-600/20 text-blue-300">
             🚒 출동 직후
           </button>
-          <button type="button" onclick="selectWorkStatus('night_standby', this)" class="work-status-btn py-2.5 rounded-xl border border-slate-800 bg-slate-800/60 text-slate-400">
+          <button type="button" onclick="selectWorkStatus('night_standby', this)" class="work-status-btn py-2 rounded-xl border border-slate-800 bg-slate-800/60 text-slate-400">
             🌙 야간 대기
           </button>
-          <button type="button" onclick="selectWorkStatus('off_duty', this)" class="work-status-btn py-2.5 rounded-xl border border-slate-800 bg-slate-800/60 text-slate-400">
+          <button type="button" onclick="selectWorkStatus('off_duty', this)" class="work-status-btn py-2 rounded-xl border border-slate-800 bg-slate-800/60 text-slate-400">
             ☕ 비번/휴식
           </button>
         </div>
       </div>
 
+      <!-- 배경 사운드 및 음성 안내 선택 바 -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 shadow-sm space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-extrabold text-slate-300 flex items-center gap-1.5">
+            <span>🎧</span> 힐링 배경 사운드
+          </span>
+          <!-- 음성 안내 ON/OFF 토글 -->
+          <button type="button" id="btn-voice-toggle" onclick="toggleVoiceGuidance()" class="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 transition">
+            <span id="voice-icon">🗣️</span>
+            <span id="voice-label">음성안내 ON</span>
+          </button>
+        </div>
+
+        <!-- 4가지 사운드 칩 선택 (쇠그릇 종소리 / 물소리 / 새소리 / 명상음악 / 무음) -->
+        <div class="flex gap-1.5 overflow-x-auto custom-scroll pb-0.5 text-[11px] font-bold">
+          <button type="button" onclick="selectBgm('bowl', this)" class="bgm-btn flex-shrink-0 px-3 py-1.5 rounded-xl border border-amber-500/50 bg-amber-500/20 text-amber-300 shadow-sm">
+            🔔 쇠그릇(종소리)
+          </button>
+          <button type="button" onclick="selectBgm('stream', this)" class="bgm-btn flex-shrink-0 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-400">
+            🌊 계곡 물소리
+          </button>
+          <button type="button" onclick="selectBgm('birds', this)" class="bgm-btn flex-shrink-0 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-400">
+            🌲 숲속 새소리
+          </button>
+          <button type="button" onclick="selectBgm('music', this)" class="bgm-btn flex-shrink-0 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-400">
+            🎵 편안한 명상음악
+          </button>
+          <button type="button" onclick="selectBgm('mute', this)" class="bgm-btn flex-shrink-0 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-400">
+            🔇 무음
+          </button>
+        </div>
+      </div>
+
       <!-- 호흡 가이드 및 원형 인터랙션 카드 -->
-      <div class="bg-gradient-to-b from-slate-900 to-slate-900/70 border border-slate-800/80 rounded-3xl p-6 text-center shadow-xl relative overflow-hidden">
+      <div class="bg-gradient-to-b from-slate-900 to-slate-900/70 border border-slate-800/80 rounded-3xl p-5 text-center shadow-xl relative overflow-hidden">
         <!-- 상단 가이드 텍스트 -->
-        <div class="mb-4">
-          <span class="text-xs font-bold text-blue-400 uppercase tracking-wider bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">
+        <div class="mb-2">
+          <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">
             급성 스트레스 이완 가이드
           </span>
-          <h2 id="breathe-instruction" class="text-xl font-black text-white mt-3">
+          <h2 id="breathe-instruction" class="text-xl font-black text-white mt-2.5">
             호흡 준비
           </h2>
-          <p id="breathe-subtext" class="text-xs text-slate-400 mt-1">
+          <p id="breathe-subtext" class="text-[11px] text-slate-400 mt-1">
             4초 들숨, 7초 멈춤, 8초 날숨으로 심박수를 안정시킵니다
           </p>
         </div>
 
         <!-- 중앙 호흡 애니메이션 원 -->
-        <div class="relative w-56 h-56 mx-auto my-6 flex items-center justify-center">
-          <!-- 외곽 후광 효과 -->
+        <div class="relative w-52 h-52 mx-auto my-4 flex items-center justify-center">
           <div id="breathe-glow" class="absolute inset-0 rounded-full bg-blue-500/15 blur-2xl transition-all duration-1000 scale-75"></div>
-          
-          <!-- 바깥 테두리 링 -->
           <div class="absolute inset-2 rounded-full border-2 border-dashed border-slate-700/60"></div>
-
-          <!-- 메인 호흡 원 -->
-          <div id="breathe-circle" class="w-40 h-40 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex flex-col items-center justify-center shadow-2xl shadow-blue-500/40 text-white transform transition-transform duration-700 scale-90">
-            <span id="breathe-phase-text" class="text-lg font-black tracking-tight">시작</span>
+          <div id="breathe-circle" class="w-36 h-36 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex flex-col items-center justify-center shadow-2xl shadow-blue-500/40 text-white transform transition-transform duration-700 scale-90">
+            <span id="breathe-phase-text" class="text-base font-black tracking-tight">시작</span>
             <span id="breathe-timer" class="text-3xl font-extrabold mt-0.5">4-7-8</span>
           </div>
         </div>
 
         <!-- 하단 시작/종료 컨트롤 버튼 -->
-        <div class="flex items-center justify-center gap-3">
-          <button id="btn-sound-toggle" onclick="toggleAudioChime()" class="p-3.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition">
-            <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-            </svg>
-          </button>
-          
+        <div class="flex items-center justify-center gap-3 mt-2">
           <button id="btn-start-session" onclick="toggleBreathingSession()" class="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-base shadow-lg shadow-blue-600/30 active:scale-95 transition-all">
             호흡 시작하기
           </button>
 
-          <button id="btn-vibrate-toggle" onclick="toggleHaptics()" class="p-3.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+          <button id="btn-vibrate-toggle" onclick="toggleHaptics()" title="진동 켜기/끄기" class="p-3.5 rounded-2xl bg-slate-800 border border-slate-700 text-amber-400 hover:text-white transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M16 19H8a1 1 0 01-1-1V6a1 1 0 011-1h8a1 1 0 011 1v12a1 1 0 01-1 1zM3 9a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zm0 6a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zm18-6a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1zm0 6a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1z" />
             </svg>
           </button>
@@ -163,10 +161,10 @@
       </div>
 
       <!-- 사전 긴장도 체크 (호흡 전 간단 슬라이더) -->
-      <div id="pre-checkin-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <div class="flex justify-between items-center mb-2">
+      <div id="pre-checkin-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
+        <div class="flex justify-between items-center mb-1.5">
           <label class="text-xs font-bold text-slate-300">현재 긴장도 수준 (세션 전)</label>
-          <span id="pre-arousal-val" class="text-sm font-black text-rose-400">7점 (높은 긴장)</span>
+          <span id="pre-arousal-val" class="text-xs font-black text-rose-400">7점 (높은 긴장)</span>
         </div>
         <input type="range" id="pre-arousal-slider" min="1" max="10" value="7" oninput="updatePreArousalLabel(this.value)" class="w-full accent-rose-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
         <div class="flex justify-between text-[10px] text-slate-500 mt-1">
@@ -254,7 +252,7 @@
           </div>
         </div>
 
-        <!-- 공무직 / 비공무원 관서 인증 초대코드 등록 카드 -->
+        <!-- 공무직 관서 인증 초대코드 등록 -->
         <div class="mt-5 p-4 rounded-xl bg-slate-800/60 border border-slate-700/60">
           <h4 class="font-bold text-xs text-amber-300 flex items-center gap-1.5">
             <span>🏷️</span> 공무직 / 기간제 관서 인증 코드

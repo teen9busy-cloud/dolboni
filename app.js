@@ -1,9 +1,13 @@
 /**
- * 돌보니(Dolboni) 하이브리드 네이티브 앱 코어 로직 (app.js)
- * - Capacitor Haptics (진동) 연동
- * - Web Audio API (화면 꺼짐 대비 오디오 차임)
- * - 4-7-8 이완 호흡 애니메이션 컨트롤러
- * - Supabase RPC 실시간 포인트/세션 연동
+ * 돌보니(Dolboni) 하이브리드 네이티브 앱 코어 로직 (app.js v2.0)
+ * - 한국어 나긋한 음성 안내 (Web Speech API)
+ * - 4대 힐링 사운드 생성기 (Web Audio API):
+ *   1) 🔔 쇠그릇(티베탄 싱잉볼 종소리)
+ *   2) 🌊 계곡 물소리 (시냇물 브라운 노이즈)
+ *   3) 🌲 숲속 새소리 (주기적 자연 지저귐)
+ *   4) 🎵 편안한 명상음악 (432Hz 힐링 앰비언트 코드 패드)
+ * - Capacitor Haptics (호흡별 정밀 진동)
+ * - 4-7-8 이완 호흡 사이클 및 사후 체크인
  */
 
 // 1. 전역 상태
@@ -22,9 +26,12 @@ const AppState = {
   postArousal: 3,
   isBreathing: false,
   timerInterval: null,
-  audioEnabled: true,
+  voiceEnabled: true,       // 음성 안내 활성화
+  currentBgm: 'bowl',       // 'bowl' | 'stream' | 'birds' | 'music' | 'mute'
   hapticsEnabled: true,
   audioCtx: null,
+  activeBgNodes: [],        // 활성화된 BGM 오디오 노드
+  birdTimer: null,
 };
 
 // 2. 초기화
@@ -32,9 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
   initAudio();
   updateHeaderPoints(AppState.user.totalPoints);
   renderTeamStatusMockCard();
+
+  // 사용자 첫 터치 시 AudioContext 자동 활성화
+  document.body.addEventListener('click', () => {
+    if (AppState.audioCtx && AppState.audioCtx.state === 'suspended') {
+      AppState.audioCtx.resume();
+    }
+  }, { once: true });
 });
 
-// 3. Web Audio 합성기 (차분한 싱잉볼/종소리 톤)
+// 3. Web Audio Context 초기화
 function initAudio() {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -46,56 +60,302 @@ function initAudio() {
   }
 }
 
-function playCalmTone(freq = 432, duration = 1.2) {
-  if (!AppState.audioEnabled || !AppState.audioCtx) return;
+// ------------------------------------------------------------------------------
+// 4. 한국어 음성 안내 (Web Speech API)
+// ------------------------------------------------------------------------------
+function speakVoice(text) {
+  if (!AppState.voiceEnabled) return;
   try {
-    if (AppState.audioCtx.state === 'suspended') {
-      AppState.audioCtx.resume();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // 이전 발화 취소
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ko-KR';
+      utterance.rate = 0.85;  // 차분하고 여유로운 속도
+      utterance.pitch = 0.95; // 편안한 중저음
+      utterance.volume = 0.9;
+      window.speechSynthesis.speak(utterance);
     }
-    const osc = AppState.audioCtx.createOscillator();
-    const gain = AppState.audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, AppState.audioCtx.currentTime);
-
-    gain.gain.setValueAtTime(0.01, AppState.audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.25, AppState.audioCtx.currentTime + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.001, AppState.audioCtx.currentTime + duration);
-
-    osc.connect(gain);
-    gain.connect(AppState.audioCtx.destination);
-    osc.start();
-    osc.stop(AppState.audioCtx.currentTime + duration);
   } catch (err) {
-    console.warn('Audio tone play error:', err);
+    console.warn('SpeechSynthesis error:', err);
   }
 }
 
-// 4. Capacitor Haptics (네이티브 진동 연동)
+function toggleVoiceGuidance() {
+  AppState.voiceEnabled = !AppState.voiceEnabled;
+  const btn = document.getElementById('btn-voice-toggle');
+  const icon = document.getElementById('voice-icon');
+  const label = document.getElementById('voice-label');
+
+  if (AppState.voiceEnabled) {
+    btn.className = 'flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 transition';
+    icon.textContent = '🗣️';
+    label.textContent = '음성안내 ON';
+    speakVoice('음성 안내가 켜졌습니다.');
+  } else {
+    btn.className = 'flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-slate-400 border border-slate-700 transition';
+    icon.textContent = '🔇';
+    label.textContent = '음성안내 OFF';
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  }
+}
+
+// ------------------------------------------------------------------------------
+// 5. 4대 힐링 사운드 신시사이저 (Web Audio API)
+// ------------------------------------------------------------------------------
+function selectBgm(type, btn) {
+  AppState.currentBgm = type;
+  document.querySelectorAll('.bgm-btn').forEach(b => {
+    b.className = 'bgm-btn flex-shrink-0 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-400 font-bold';
+  });
+  btn.className = 'bgm-btn flex-shrink-0 px-3 py-1.5 rounded-xl border border-amber-500/50 bg-amber-500/20 text-amber-300 font-bold shadow-sm';
+
+  stopContinuousBgm();
+
+  if (AppState.isBreathing) {
+    startContinuousBgm();
+  } else {
+    // 테스트용 1회성 사운드 미리듣기
+    previewBgm(type);
+  }
+}
+
+function stopContinuousBgm() {
+  if (AppState.birdTimer) clearInterval(AppState.birdTimer);
+  AppState.activeBgNodes.forEach(node => {
+    try {
+      if (node.stop) node.stop();
+      if (node.disconnect) node.disconnect();
+    } catch (e) {}
+  });
+  AppState.activeBgNodes = [];
+}
+
+function previewBgm(type) {
+  if (!AppState.audioCtx) return;
+  if (AppState.audioCtx.state === 'suspended') AppState.audioCtx.resume();
+
+  if (type === 'bowl') {
+    playSingingBowl(216, 4.0);
+  } else if (type === 'stream') {
+    playStreamBurst(2.5);
+  } else if (type === 'birds') {
+    playBirdChirp();
+  } else if (type === 'music') {
+    playAmbientChord(3.0);
+  }
+}
+
+function startContinuousBgm() {
+  if (!AppState.audioCtx || AppState.currentBgm === 'mute') return;
+  if (AppState.audioCtx.state === 'suspended') AppState.audioCtx.resume();
+
+  stopContinuousBgm();
+
+  if (AppState.currentBgm === 'stream') {
+    // 지속적인 계곡 물소리 생성
+    startStreamAudio();
+  } else if (AppState.currentBgm === 'birds') {
+    // 지속적인 숲속 새소리 주기적 트리거
+    playBirdChirp();
+    AppState.birdTimer = setInterval(() => {
+      if (AppState.isBreathing && AppState.currentBgm === 'birds') {
+        playBirdChirp();
+      }
+    }, 3800);
+  } else if (AppState.currentBgm === 'music') {
+    // 지속적인 432Hz 명상 앰비언트 패드
+    startAmbientPad();
+  } else if (AppState.currentBgm === 'bowl') {
+    // 싱잉볼은 호흡 단계 전환마다 타종
+    playSingingBowl(216, 5.0);
+  }
+}
+
+// [사운드 1] 🔔 쇠그릇 (티베탄 싱잉볼 / 종소리)
+function playSingingBowl(baseFreq = 216, duration = 5.0) {
+  if (!AppState.audioCtx) return;
+  try {
+    const ctx = AppState.audioCtx;
+    const now = ctx.currentTime;
+    // 티베탄 싱잉볼의 배음 구조 (기음 + 배음들)
+    const partials = [
+      { f: baseFreq, g: 0.35 },
+      { f: baseFreq * 2.76, g: 0.18 }, // 금속 배음 1
+      { f: baseFreq * 5.4, g: 0.08 },  // 금속 배음 2
+      { f: baseFreq + 1.5, g: 0.12 }   // 은은한 바이노럴 울림맥동
+    ];
+
+    partials.forEach(p => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(p.f, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(p.g, now + 0.08); // 부드러운 타격
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration); // 긴 여운
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    });
+  } catch (err) {
+    console.warn('Singing bowl error:', err);
+  }
+}
+
+// [사운드 2] 🌊 계곡 물소리 (Stream Generator via Pink Noise)
+function startStreamAudio() {
+  try {
+    const ctx = AppState.audioCtx;
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    // 핑크 노이즈 버퍼 생성
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.04;
+      b6 = white * 0.115926;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    noise.loop = true;
+
+    // 계곡 물소리용 공명 저역/대역 필터
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(650, ctx.currentTime);
+
+    // 물의 출렁임 LFO
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.setValueAtTime(0.4, ctx.currentTime); // 0.4Hz 물결
+    lfoGain.gain.setValueAtTime(200, ctx.currentTime);
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    noise.start();
+    lfo.start();
+
+    AppState.activeBgNodes.push(noise, lfo, gain, filter);
+  } catch (err) {
+    console.warn('Stream audio error:', err);
+  }
+}
+
+function playStreamBurst(duration = 2.5) {
+  startStreamAudio();
+  setTimeout(() => {
+    if (!AppState.isBreathing) stopContinuousBgm();
+  }, duration * 1000);
+}
+
+// [사운드 3] 🌲 숲속 새소리 (Bird Chirp Synthesizer)
+function playBirdChirp() {
+  if (!AppState.audioCtx) return;
+  try {
+    const ctx = AppState.audioCtx;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    // 새 지저귐 주파수 곡선
+    osc.frequency.setValueAtTime(2800, now);
+    osc.frequency.exponentialRampToValueAtTime(3600, now + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(2400, now + 0.18);
+    osc.frequency.exponentialRampToValueAtTime(3200, now + 0.28);
+    osc.frequency.exponentialRampToValueAtTime(2200, now + 0.42);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.12, now + 0.06);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.48);
+  } catch (err) {
+    console.warn('Bird chirp error:', err);
+  }
+}
+
+// [사운드 4] 🎵 432Hz 편안한 명상 앰비언트 코드 패드
+function startAmbientPad() {
+  try {
+    const ctx = AppState.audioCtx;
+    const now = ctx.currentTime;
+    // 432Hz 기반 D Major 9th 코드 화음 (치유 주파수 패드)
+    const chord = [216, 272.2, 324, 432];
+
+    chord.forEach(freq => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.linearRampToValueAtTime(0.06, now + 1.5);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      AppState.activeBgNodes.push(osc, gain);
+    });
+  } catch (err) {
+    console.warn('Ambient pad error:', err);
+  }
+}
+
+function playAmbientChord(duration = 3.0) {
+  startAmbientPad();
+  setTimeout(() => {
+    if (!AppState.isBreathing) stopContinuousBgm();
+  }, duration * 1000);
+}
+
+// ------------------------------------------------------------------------------
+// 6. Capacitor Haptics (진동)
+// ------------------------------------------------------------------------------
 async function triggerVibration(type = 'light') {
   if (!AppState.hapticsEnabled) return;
   try {
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
       const Haptics = window.Capacitor.Plugins.Haptics;
-      if (type === 'inhale') {
-        await Haptics.vibrate({ duration: 300 });
-      } else if (type === 'hold') {
-        await Haptics.impact({ style: 'LIGHT' });
-      } else if (type === 'exhale') {
-        await Haptics.vibrate({ duration: 500 });
-      }
+      if (type === 'inhale') await Haptics.vibrate({ duration: 300 });
+      else if (type === 'hold') await Haptics.impact({ style: 'LIGHT' });
+      else if (type === 'exhale') await Haptics.vibrate({ duration: 500 });
     } else if (navigator.vibrate) {
-      if (type === 'inhale') navigator.vibrate([150, 50, 150]);
+      if (type === 'inhale') navigator.vibrate([180, 60, 180]);
       else if (type === 'hold') navigator.vibrate(80);
-      else if (type === 'exhale') navigator.vibrate(300);
+      else if (type === 'exhale') navigator.vibrate(400);
     }
   } catch (err) {
     console.warn('Haptics failed:', err);
   }
 }
 
-// 5. 4-7-8 이완 호흡 사이클 제어
+// ------------------------------------------------------------------------------
+// 7. 4-7-8 이완 호흡 사이클 제어
+// ------------------------------------------------------------------------------
 function toggleBreathingSession() {
-  const btn = document.getElementById('btn-start-session');
   if (AppState.isBreathing) {
     stopBreathingSession();
   } else {
@@ -110,12 +370,17 @@ function startBreathingSession() {
   btn.classList.replace('from-blue-600', 'from-rose-600');
   btn.classList.replace('to-indigo-600', 'to-rose-700');
 
+  // 지속 배경음 시작
+  startContinuousBgm();
+
   runBreathingCycle();
 }
 
 function stopBreathingSession() {
   AppState.isBreathing = false;
   if (AppState.timerInterval) clearInterval(AppState.timerInterval);
+
+  stopContinuousBgm();
 
   const btn = document.getElementById('btn-start-session');
   btn.textContent = '호흡 시작하기';
@@ -126,6 +391,9 @@ function stopBreathingSession() {
   document.getElementById('breathe-phase-text').textContent = '완료';
   document.getElementById('breathe-timer').textContent = '4-7-8';
   document.getElementById('breathe-circle').style.transform = 'scale(0.9)';
+
+  // 음성으로 완료 안내
+  speakVoice('수고하셨습니다. 지금 몸과 마음의 긴장도를 체크해 주세요.');
 
   // 사후 체크인 팝업 열기
   openPostCheckinModal();
@@ -146,7 +414,9 @@ function runBreathingCycle() {
   timer.textContent = '4';
   circle.style.transform = 'scale(1.35)';
   glow.style.transform = 'scale(1.3)';
-  playCalmTone(396, 2.0);
+  
+  if (AppState.currentBgm === 'bowl') playSingingBowl(216, 4.0);
+  speakVoice('코로 숨을 천천히 들이마십니다.');
   triggerVibration('inhale');
 
   let count = 4;
@@ -161,6 +431,7 @@ function runBreathingCycle() {
       title.textContent = '숨을 편안히 멈춥니다 (7초)';
       phase.textContent = '멈춤';
       timer.textContent = '7';
+      speakVoice('숨을 멈추고 온몸의 긴장을 풉니다.');
       triggerVibration('hold');
 
       let holdCount = 7;
@@ -177,7 +448,9 @@ function runBreathingCycle() {
           timer.textContent = '8';
           circle.style.transform = 'scale(0.85)';
           glow.style.transform = 'scale(0.8)';
-          playCalmTone(285, 3.0);
+          
+          if (AppState.currentBgm === 'bowl') playSingingBowl(162, 5.0);
+          speakVoice('입으로 모든 긴장을 내보냅니다.');
           triggerVibration('exhale');
 
           let exhaleCount = 8;
@@ -200,21 +473,23 @@ function runBreathingCycle() {
   }, 1000);
 }
 
-// 6. 상태 선택 & 사전 긴장도
+// ------------------------------------------------------------------------------
+// 8. 상태 선택 & 긴장도 레이블
+// ------------------------------------------------------------------------------
 function selectWorkStatus(status, btn) {
   AppState.workStatus = status;
   document.querySelectorAll('.work-status-btn').forEach(b => {
-    b.className = 'work-status-btn py-2.5 rounded-xl border border-slate-800 bg-slate-800/60 text-slate-400';
+    b.className = 'work-status-btn py-2 rounded-xl border border-slate-800 bg-slate-800/60 text-slate-400';
   });
-  btn.className = 'work-status-btn py-2.5 rounded-xl border border-blue-500/40 bg-blue-600/20 text-blue-300 font-bold';
+  btn.className = 'work-status-btn py-2 rounded-xl border border-blue-500/40 bg-blue-600/20 text-blue-300 font-bold';
 }
 
 function updatePreArousalLabel(val) {
   AppState.preArousal = parseInt(val);
   const el = document.getElementById('pre-arousal-val');
-  if (val >= 8) el.className = 'text-sm font-black text-rose-400';
-  else if (val >= 5) el.className = 'text-sm font-black text-amber-400';
-  else el.className = 'text-sm font-black text-emerald-400';
+  if (val >= 8) el.className = 'text-xs font-black text-rose-400';
+  else if (val >= 5) el.className = 'text-xs font-black text-amber-400';
+  else el.className = 'text-xs font-black text-emerald-400';
   el.textContent = `${val}점 (${val >= 8 ? '극심한 긴장' : val >= 5 ? '다소 긴장' : '안정'})`;
 }
 
@@ -224,7 +499,9 @@ function updatePostArousalLabel(val) {
   el.textContent = `${val}점 (${val <= 4 ? '안정됨' : '긴장 잔류'})`;
 }
 
-// 7. 사후 체크인 모달 및 포인트 적립
+// ------------------------------------------------------------------------------
+// 9. 사후 체크인 모달 및 포인트 적립
+// ------------------------------------------------------------------------------
 function openPostCheckinModal() {
   document.getElementById('modal-post-checkin').classList.remove('hidden');
 }
@@ -237,12 +514,10 @@ function confirmPostCheckinAndSave() {
   AppState.user.totalPoints += earnedPoints;
 
   updateHeaderPoints(AppState.user.totalPoints);
-
-  // 리워드 토스트 알림 표출
   showRewardToast(earnedPoints, tensionDrop);
 }
 
-// 8. 리워드 토스트 알림 ("+50 포인트가 적립되었습니다 (긴장도 3점 완화!)")
+// 10. 리워드 토스트 알림
 function showRewardToast(points, drop) {
   const container = document.getElementById('dolboni-toast-container');
   const toast = document.createElement('div');
@@ -284,7 +559,7 @@ function updateHeaderPoints(points) {
   document.getElementById('header-points-value').textContent = `${points.toLocaleString()} P`;
 }
 
-// 9. 탭 전환
+// 11. 탭 전환
 function switchTab(tabId) {
   document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
   document.getElementById(`tab-${tabId}`).classList.remove('hidden');
@@ -299,20 +574,12 @@ function switchTab(tabId) {
   });
 }
 
-// 10. 사운드 및 진동 토글
-function toggleAudioChime() {
-  AppState.audioEnabled = !AppState.audioEnabled;
-  const icon = document.getElementById('icon-sound-on');
-  icon.classList.toggle('text-blue-400', AppState.audioEnabled);
-  icon.classList.toggle('text-slate-500', !AppState.audioEnabled);
-}
-
 function toggleHaptics() {
   AppState.hapticsEnabled = !AppState.hapticsEnabled;
   alert(`진동 햅틱 안내가 ${AppState.hapticsEnabled ? '켜졌습니다' : '꺼졌습니다'}.`);
 }
 
-// 11. 우리 센터/팀 함께 돌보기 현황 카드 렌더링
+// 12. 우리 센터/팀 함께 돌보기 현황 카드 렌더링
 function renderTeamStatusMockCard() {
   const container = document.getElementById('dolboni-team-status-card-container');
   if (!container) return;
@@ -352,7 +619,7 @@ function renderTeamStatusMockCard() {
   `;
 }
 
-// 12. 공무직 인증 코드 검증
+// 13. 공무직 인증 코드 검증
 function verifyCivilianInviteCode() {
   const code = document.getElementById('invite-code-input').value.trim();
   if (code.length === 6) {
@@ -364,11 +631,10 @@ function verifyCivilianInviteCode() {
   }
 }
 
-// 13. 상담 신청 제출 (시모니 연동)
+// 14. 상담 신청 제출 (시모니 연동)
 function submitCounselRequest(e) {
   e.preventDefault();
   const phone = document.getElementById('counsel-phone').value;
-  const time = document.getElementById('counsel-time').value;
   alert(`비공개 상담 신청이 접수되었습니다!\n전담 상담사가 확인 후 [${phone}] 번호로 조용히 연락드립니다.`);
   e.target.reset();
   switchTab('shelter');
