@@ -1,9 +1,11 @@
 /**
- * 돌보니(Dolboni) 하이브리드 네이티브 앱 코어 로직 (app.js v4.0)
- * 1. 따뜻하고 자연스러운 실제 명상 성우 음성 안내 (고음질 MP3)
- * 2. 실제 자연의 소리 4종 (시냇물 소리, 빗소리, 새소리, 명상음악) 루프 재생
- * 3. 호흡 중 실시간 배경음 전환 (끊김 없는 즉각 교체)
- * 4. 터치 시 버튼 크기 변형 완전 방지 (고정 크기 유지)
+ * 돌보니(Dolboni) 하이브리드 네이티브 앱 코어 로직 (app.js v5.0 - 동시 오디오 믹싱 완결판)
+ * 1. Web Audio API 동시 믹싱 (Single AudioContext):
+ *    - 성우 목소리와 배경음(BGM)이 끊김 없이 완벽하게 동시 재생 (Simultaneous Mixing)
+ *    - 성우 음성 재생 시 배경음이 은은하게 줄어들었다가 다시 올라오는 오토 덕킹(Auto-Ducking) 적용
+ * 2. 한층 더 따뜻하고 부드러워진 명상 호흡 전문 성우 음성 (선희 내레이션 2.0)
+ * 3. 5대 사운드(시냇물, 빗소리, 새소리, 명상음악, 무음) 호흡 중 실시간 전환
+ * 4. 모바일 원스크린 고정 레이아웃 (버튼 크기 불변)
  */
 
 // 1. 전역 상태
@@ -25,57 +27,120 @@ const AppState = {
   voiceEnabled: true,       // 음성 안내 활성화
   currentBgm: 'stream',     // 'stream' | 'rain' | 'birds' | 'music' | 'mute'
   hapticsEnabled: true,
-  bgmAudio: null,           // 배경음 Audio 엘리먼트
-  voiceAudio: null,         // 성우 음성 Audio 엘리먼트
+  audioCtx: null,
+  bgmGain: null,
+  voiceGain: null,
+  bgmSource: null,
+  audioBuffers: {},         // 디코딩된 오디오 버퍼 캐시
+  isLoadingAudio: false,
 };
 
-// 2. 초기화
+// 2. 초기화 및 모바일 제스처 언락
 document.addEventListener('DOMContentLoaded', () => {
-  initAudioPlayers();
   updateHeaderPoints(AppState.user.totalPoints);
   renderTeamStatusMockCard();
 
-  // 모바일 오디오 잠금 해제 (첫 터치 시)
-  const unlock = () => {
-    if (AppState.bgmAudio) {
-      AppState.bgmAudio.load();
-    }
-    if (AppState.voiceAudio) {
-      AppState.voiceAudio.load();
-    }
+  // 첫 터치 시 AudioContext 활성화 및 핵심 음성/사운드 즉시 프리로드
+  const unlockAndPreload = () => {
+    initAudioEngine();
+    preloadAudio();
   };
-  document.addEventListener('touchstart', unlock, { once: true });
-  document.addEventListener('click', unlock, { once: true });
+  document.addEventListener('touchstart', unlockAndPreload, { once: true });
+  document.addEventListener('click', unlockAndPreload, { once: true });
 });
 
-// 3. 고음질 오디오 플레이어 초기화
-function initAudioPlayers() {
-  AppState.bgmAudio = new Audio();
-  AppState.bgmAudio.loop = true;
-  AppState.bgmAudio.volume = 0.85;
+// 3. Web Audio 믹싱 엔진 초기화
+function initAudioEngine() {
+  if (AppState.audioCtx) {
+    if (AppState.audioCtx.state === 'suspended') AppState.audioCtx.resume();
+    return;
+  }
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    AppState.audioCtx = new AudioCtx();
 
-  AppState.voiceAudio = new Audio();
-  AppState.voiceAudio.volume = 1.0;
+    // 배경음 볼륨 노드 (기본 0.45)
+    AppState.bgmGain = AppState.audioCtx.createGain();
+    AppState.bgmGain.gain.setValueAtTime(0.45, AppState.audioCtx.currentTime);
+    AppState.bgmGain.connect(AppState.audioCtx.destination);
+
+    // 음성 볼륨 노드 (기본 1.0 - 또렷하게)
+    AppState.voiceGain = AppState.audioCtx.createGain();
+    AppState.voiceGain.gain.setValueAtTime(1.0, AppState.audioCtx.currentTime);
+    AppState.voiceGain.connect(AppState.audioCtx.destination);
+
+    if (AppState.audioCtx.state === 'suspended') {
+      AppState.audioCtx.resume();
+    }
+  } catch (err) {
+    console.warn('AudioEngine init error:', err);
+  }
+}
+
+// 오디오 파일 비동기 로드 및 디코딩
+async function loadAudioBuffer(url) {
+  if (AppState.audioBuffers[url]) return AppState.audioBuffers[url];
+  try {
+    initAudioEngine();
+    const resp = await fetch(url);
+    const arrayBuffer = await resp.arrayBuffer();
+    const audioBuffer = await AppState.audioCtx.decodeAudioData(arrayBuffer);
+    AppState.audioBuffers[url] = audioBuffer;
+    return audioBuffer;
+  } catch (err) {
+    console.warn('Load audio buffer error:', url, err);
+    return null;
+  }
+}
+
+// 핵심 음성 및 기본 BGM 사전 로드
+function preloadAudio() {
+  initAudioEngine();
+  const preloadList = [
+    'audio/voice_intro.mp3',
+    'audio/voice_inhale.mp3',
+    'audio/voice_hold.mp3',
+    'audio/voice_exhale.mp3',
+    'audio/voice_complete.mp3',
+    'audio/bgm_stream.ogg',
+    'audio/bgm_rain.ogg',
+  ];
+  preloadList.forEach(url => loadAudioBuffer(url));
 }
 
 // ------------------------------------------------------------------------------
-// 4. 따뜻한 실제 성우 음성 안내 (선희 내레이션 MP3)
+// 4. 따뜻한 명상 성우 음성 재생 (BGM과 동시 출력 + 부드러운 오토 덕킹)
 // ------------------------------------------------------------------------------
-function playVoice(filename) {
+async function playVoice(filename) {
   if (!AppState.voiceEnabled) return;
+  initAudioEngine();
+  if (!AppState.audioCtx) return;
+
   try {
-    if (!AppState.voiceAudio) initAudioPlayers();
-    AppState.voiceAudio.pause();
-    AppState.voiceAudio.currentTime = 0;
-    AppState.voiceAudio.src = `audio/${filename}`;
-    const p = AppState.voiceAudio.play();
-    if (p && p.catch) p.catch(e => console.warn('Voice play deferred:', e));
+    const url = `audio/${filename}`;
+    const buffer = await loadAudioBuffer(url);
+    if (!buffer) return;
+
+    // 성우 목소리가 나올 때 BGM 볼륨을 살짝 낮춰주는 오토 덕킹 (0.45 -> 0.2)
+    if (AppState.bgmGain && AppState.currentBgm !== 'mute') {
+      const now = AppState.audioCtx.currentTime;
+      AppState.bgmGain.gain.cancelScheduledValues(now);
+      AppState.bgmGain.gain.linearRampToValueAtTime(0.2, now + 0.3);
+      // 음성 종료 후 다시 BGM 볼륨 회복 (0.2 -> 0.45)
+      AppState.bgmGain.gain.linearRampToValueAtTime(0.45, now + buffer.duration + 0.5);
+    }
+
+    const source = AppState.audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(AppState.voiceGain);
+    source.start(0);
   } catch (err) {
-    console.warn('Voice error:', err);
+    console.warn('PlayVoice error:', err);
   }
 }
 
 function toggleVoiceGuidance() {
+  initAudioEngine();
   AppState.voiceEnabled = !AppState.voiceEnabled;
 
   const btn = document.getElementById('btn-voice-toggle');
@@ -92,33 +157,32 @@ function toggleVoiceGuidance() {
     btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-bold text-xs';
     icon.textContent = '🔇';
     title.textContent = '성우 음성 OFF';
-
-    if (AppState.voiceAudio) AppState.voiceAudio.pause();
   }
 }
 
 // ------------------------------------------------------------------------------
-// 5. 실제 자연의 소리 4종 (시냇물 / 빗소리 / 새소리 / 명상음악)
+// 5. 5대 사운드스케이프 (시냇물 / 빗소리 / 새소리 / 명상음악 / 무음) 루프 재생
 // ------------------------------------------------------------------------------
 const BGM_FILES = {
-  stream: 'bgm_stream.ogg',
-  rain: 'bgm_rain.ogg',
-  birds: 'bgm_birds.ogg',
-  music: 'bgm_music.mp3',
+  stream: 'audio/bgm_stream.ogg',
+  rain: 'audio/bgm_rain.ogg',
+  birds: 'audio/bgm_birds.ogg',
+  music: 'audio/bgm_music.mp3',
 };
 
 const BGM_NAMES = {
-  stream: '🌊 시냇물 소리 재생 중',
-  rain: '🌧️ 빗소리 재생 중',
-  birds: '🌲 새소리 재생 중',
-  music: '🎵 명상음악 재생 중',
+  stream: '🌊 시냇물 소리',
+  rain: '🌧️ 빗소리',
+  birds: '🌲 새소리',
+  music: '🎵 명상음악',
   mute: '🔇 무음',
 };
 
 function selectBgm(type, btn) {
+  initAudioEngine();
   AppState.currentBgm = type;
 
-  // 버튼 스타일 초기화 (크기 변형 없음)
+  // 버튼 스타일 업데이트 (크기 변형 없음)
   document.querySelectorAll('.bgm-btn').forEach(b => {
     b.className = 'bgm-btn py-2 px-1 rounded-xl border border-slate-800 bg-slate-800/80 text-slate-300 flex flex-col items-center';
   });
@@ -131,32 +195,43 @@ function selectBgm(type, btn) {
     btn.className = 'bgm-btn py-2 px-1 rounded-xl border-2 border-amber-500 bg-amber-500/20 text-amber-300 flex flex-col items-center';
     document.getElementById('now-playing-label').textContent = BGM_NAMES[type] || '';
     
-    // 호흡 중이거나 미리듣기일 때 즉각 재생
-    playBgm(type);
+    // 호흡 중이든 대기 중이든 즉시 새 BGM으로 실시간 전환
+    startBgm(type);
   }
 }
 
-function playBgm(type) {
+async function startBgm(type) {
   if (!BGM_FILES[type] || type === 'mute') {
     stopBgm();
     return;
   }
+  initAudioEngine();
+  if (!AppState.audioCtx) return;
+
+  stopBgm();
 
   try {
-    if (!AppState.bgmAudio) initAudioPlayers();
-    AppState.bgmAudio.src = `audio/${BGM_FILES[type]}`;
-    AppState.bgmAudio.currentTime = 0;
-    const p = AppState.bgmAudio.play();
-    if (p && p.catch) p.catch(e => console.warn('BGM play deferred:', e));
+    const url = BGM_FILES[type];
+    const buffer = await loadAudioBuffer(url);
+    if (!buffer) return;
+
+    AppState.bgmSource = AppState.audioCtx.createBufferSource();
+    AppState.bgmSource.buffer = buffer;
+    AppState.bgmSource.loop = true;
+    AppState.bgmSource.connect(AppState.bgmGain);
+    AppState.bgmSource.start(0);
   } catch (err) {
-    console.warn('Play BGM error:', err);
+    console.warn('StartBgm error:', err);
   }
 }
 
 function stopBgm() {
-  if (AppState.bgmAudio) {
-    AppState.bgmAudio.pause();
-    AppState.bgmAudio.currentTime = 0;
+  if (AppState.bgmSource) {
+    try {
+      AppState.bgmSource.stop();
+      AppState.bgmSource.disconnect();
+    } catch (e) {}
+    AppState.bgmSource = null;
   }
 }
 
@@ -185,6 +260,7 @@ async function triggerVibration(type = 'light') {
 // 7. 4-7-8 이완 호흡 사이클 제어
 // ------------------------------------------------------------------------------
 function toggleBreathingSession() {
+  initAudioEngine();
   if (AppState.isBreathing) {
     stopBreathingSession();
   } else {
@@ -199,9 +275,9 @@ function startBreathingSession() {
   btn.classList.replace('from-blue-600', 'from-rose-600');
   btn.classList.replace('to-indigo-600', 'to-rose-700');
 
-  // 배경음 재생 시작
+  // 배경음 재생 (무음이 아닌 경우)
   if (AppState.currentBgm !== 'mute') {
-    playBgm(AppState.currentBgm);
+    startBgm(AppState.currentBgm);
   }
 
   runBreathingCycle();
@@ -223,7 +299,7 @@ function stopBreathingSession() {
   document.getElementById('breathe-timer').textContent = '4-7-8';
   document.getElementById('breathe-circle').style.transform = 'scale(0.9)';
 
-  // 따뜻한 음성으로 완료 안내
+  // 차분한 음성으로 완료 안내
   playVoice('voice_complete.mp3');
 
   // 사후 체크인 팝업 열기
@@ -240,12 +316,13 @@ function runBreathingCycle() {
   const timer = document.getElementById('breathe-timer');
 
   // Phase 1: 4초 들숨 (Inhale)
-  title.textContent = '코로 깊게 들이마십니다 (4초)';
+  title.textContent = '코로 천천히 숨을 들이마십니다 (4초)';
   phase.textContent = '들숨';
   timer.textContent = '4';
   circle.style.transform = 'scale(1.35)';
   glow.style.transform = 'scale(1.3)';
   
+  // 성우 음성 출력 (BGM과 동시 재생!)
   playVoice('voice_inhale.mp3');
   triggerVibration('inhale');
 
@@ -274,7 +351,7 @@ function runBreathingCycle() {
         } else {
           clearInterval(AppState.timerInterval);
           // Phase 3: 8초 입으로 내쉼 (Exhale)
-          title.textContent = '입으로 천천히 내쉽니다 (8초)';
+          title.textContent = '입으로 편안하게 내쉽니다 (8초)';
           phase.textContent = '날숨';
           timer.textContent = '8';
           circle.style.transform = 'scale(0.85)';
@@ -308,9 +385,9 @@ function runBreathingCycle() {
 function selectWorkStatus(status, btn) {
   AppState.workStatus = status;
   document.querySelectorAll('.work-status-btn').forEach(b => {
-    b.className = 'work-status-btn h-12 rounded-2xl border border-slate-800 bg-slate-800/60 text-slate-400';
+    b.className = 'work-status-btn px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-800/80 text-slate-400 font-bold';
   });
-  btn.className = 'work-status-btn h-12 rounded-2xl border-2 border-blue-500 bg-blue-600/30 text-blue-200 font-bold';
+  btn.className = 'work-status-btn px-2.5 py-1 rounded-lg border border-blue-500 bg-blue-600/30 text-blue-200 font-bold';
 }
 
 function updatePreArousalLabel(val) {
@@ -352,21 +429,21 @@ function showRewardToast(points, drop) {
   const toast = document.createElement('div');
   toast.className = `
     pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300 ease-out
-    flex items-center gap-3 px-5 py-4 bg-slate-900 border border-emerald-500/60 text-white
+    flex items-center gap-3 px-4 py-3 bg-slate-900 border border-emerald-500/60 text-white
     rounded-2xl shadow-2xl backdrop-blur-md
   `;
 
   const dropText = drop > 0 ? ` (긴장도 ${drop}점 완화!)` : '';
 
   toast.innerHTML = `
-    <div class="w-9 h-9 rounded-full bg-emerald-500/25 text-emerald-400 flex items-center justify-center font-black text-base">
+    <div class="w-8 h-8 rounded-full bg-emerald-500/25 text-emerald-400 flex items-center justify-center font-black text-sm">
       ✓
     </div>
     <div>
-      <p class="font-black text-sm text-emerald-300">
+      <p class="font-black text-xs text-emerald-300">
         +${points} 포인트가 적립되었습니다!
       </p>
-      <p class="text-xs text-slate-300 font-medium mt-0.5">
+      <p class="text-[11px] text-slate-300 font-medium">
         호흡 가이드 완료${dropText}
       </p>
     </div>
@@ -396,9 +473,9 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
     const tabs = ['shelter', 'records', 'counsel', 'profile'];
     if (tabs[idx] === tabId) {
-      btn.className = 'tab-btn flex flex-col items-center gap-1 text-blue-400';
+      btn.className = 'tab-btn flex flex-col items-center gap-0.5 text-blue-400';
     } else {
-      btn.className = 'tab-btn flex flex-col items-center gap-1 text-slate-400';
+      btn.className = 'tab-btn flex flex-col items-center gap-0.5 text-slate-400';
     }
   });
 }
@@ -414,31 +491,31 @@ function renderTeamStatusMockCard() {
   if (!container) return;
 
   container.innerHTML = `
-    <div class="p-5 rounded-3xl bg-slate-900 border border-slate-700/60 shadow-lg text-white">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="p-2 rounded-xl bg-blue-500/20 text-blue-400">🤝</span>
-          <h3 class="font-extrabold text-sm tracking-tight">우리 센터/팀 함께 돌보기 현황</h3>
+    <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700/60 shadow-lg text-white">
+      <div class="flex items-center justify-between mb-2.5">
+        <div class="flex items-center gap-1.5">
+          <span class="p-1 rounded-lg bg-blue-500/20 text-blue-400">🤝</span>
+          <h3 class="font-extrabold text-xs tracking-tight">우리 센터/팀 함께 돌보기 현황</h3>
         </div>
-        <span class="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-bold border border-slate-700">
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-bold border border-slate-700">
           상대센터 1팀
         </span>
       </div>
 
-      <div class="space-y-3">
+      <div class="space-y-2">
         <div class="flex items-baseline justify-between text-xs">
-          <span class="text-slate-400">이번 달 누적 회복 시간</span>
-          <span class="text-base font-black text-blue-400">
+          <span class="text-slate-400 text-[11px]">이번 달 누적 회복 시간</span>
+          <span class="text-sm font-black text-blue-400">
             8시간 20분 
-            <span class="text-xs font-normal text-slate-400">/ 목표 10시간</span>
+            <span class="text-[10px] font-normal text-slate-400">/ 10시간</span>
           </span>
         </div>
 
         <div>
-          <div class="w-full bg-slate-800 rounded-full h-3.5 overflow-hidden border border-slate-700/50">
-            <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-3.5 rounded-full transition-all duration-700" style="width: 83.3%"></div>
+          <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700/50">
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2.5 rounded-full" style="width: 83.3%"></div>
           </div>
-          <div class="flex justify-between items-center mt-2 text-xs text-slate-400 font-medium">
+          <div class="flex justify-between items-center mt-1.5 text-[10px] text-slate-400 font-medium">
             <span>목표 달성률 <strong class="text-emerald-400 font-bold">83.3%</strong></span>
             <span>함께한 대원 <strong>6명</strong></span>
           </div>
