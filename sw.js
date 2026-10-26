@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v8.2-voice-tuning-lab';
+const CACHE_NAME = 'dolboni-v8.3-neutral-voice-names';
 const PRECACHE_URLS = [
   './',
   './index.html',

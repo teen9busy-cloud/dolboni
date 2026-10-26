@@ -82,39 +82,39 @@
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-        <!-- 혜민 실장 (선희) -->
-        <button id="btn-voice-hyemin" onclick="setSpeakerMode('hyemin')" class="p-3 rounded-2xl border-2 border-rose-500 bg-rose-500/20 text-left transition flex flex-col justify-between">
+        <!-- 여성 성우 (선희) -->
+        <button id="btn-voice-hyemin" onclick="setSpeakerMode('female')" class="p-3 rounded-2xl border-2 border-rose-500 bg-rose-500/20 text-left transition flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-base">🌸</span>
             <span id="badge-hyemin" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500 text-white">선택됨</span>
           </div>
           <div class="mt-2">
-            <h4 class="text-xs font-black text-white">혜민 실장 (여성)</h4>
+            <h4 class="text-xs font-black text-white">여성 성우 (기본)</h4>
             <p class="text-[10px] text-rose-200 mt-0.5">차분하고 포근한 상담사 톤</p>
           </div>
         </button>
 
-        <!-- 민우 실장 A (현수) -->
-        <button id="btn-voice-minwoo-a" onclick="setSpeakerMode('minwoo_hyunsu')" class="p-3 rounded-2xl border border-slate-700 bg-slate-800/80 text-left transition flex flex-col justify-between">
+        <!-- 남성 성우 A (현수) -->
+        <button id="btn-voice-minwoo-a" onclick="setSpeakerMode('male_a')" class="p-3 rounded-2xl border border-slate-700 bg-slate-800/80 text-left transition flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-base">🌿</span>
             <span id="badge-minwoo-a" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-300 hidden">선택됨</span>
           </div>
           <div class="mt-2">
-            <h4 class="text-xs font-black text-white">민우 실장 A (남성)</h4>
+            <h4 class="text-xs font-black text-white">남성 성우 A (다정)</h4>
             <p class="text-[10px] text-slate-400 mt-0.5">다정하고 현대적인 청년 톤</p>
           </div>
         </button>
 
-        <!-- 민우 실장 B (인준) -->
-        <button id="btn-voice-minwoo-b" onclick="setSpeakerMode('minwoo_injoon')" class="p-3 rounded-2xl border border-slate-700 bg-slate-800/80 text-left transition flex flex-col justify-between">
+        <!-- 남성 성우 B (인준) -->
+        <button id="btn-voice-minwoo-b" onclick="setSpeakerMode('male_b')" class="p-3 rounded-2xl border border-slate-700 bg-slate-800/80 text-left transition flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-base">🌲</span>
             <span id="badge-minwoo-b" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-300 hidden">선택됨</span>
           </div>
           <div class="mt-2">
-            <h4 class="text-xs font-black text-white">민우 실장 B (남성)</h4>
-            <p class="text-[10px] text-slate-400 mt-0.5">묵직하고 깊은 중저음 명상 톤</p>
+            <h4 class="text-xs font-black text-white">남성 성우 B (중저음)</h4>
+            <p class="text-[10px] text-slate-400 mt-0.5">묵직하고 깊은 명상 저음 톤</p>
           </div>
         </button>
       </div>
@@ -446,13 +446,13 @@
       });
       [bH, bMA, bMB].forEach(b => b.classList.add('hidden'));
 
-      if (mode === 'hyemin') {
+      if (mode === 'female' || mode === 'hyemin') {
         btnH.className = 'p-3 rounded-2xl border-2 border-rose-500 bg-rose-500/20 text-left transition flex flex-col justify-between shadow-lg';
         bH.classList.remove('hidden');
-      } else if (mode === 'minwoo_hyunsu') {
+      } else if (mode === 'male_a' || mode === 'minwoo_hyunsu' || mode === 'male') {
         btnMA.className = 'p-3 rounded-2xl border-2 border-cyan-500 bg-cyan-500/20 text-left transition flex flex-col justify-between shadow-lg';
         bMA.classList.remove('hidden');
-      } else if (mode === 'minwoo_injoon') {
+      } else if (mode === 'male_b' || mode === 'minwoo_injoon') {
         btnMB.className = 'p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-500/20 text-left transition flex flex-col justify-between shadow-lg';
         bMB.classList.remove('hidden');
       }
@@ -505,9 +505,9 @@
       if (customData) return customData;
 
       // 2. 모델별 음원 파일 매핑
-      if (tuningState.speaker === 'hyemin') {
+      if (tuningState.speaker === 'female' || tuningState.speaker === 'hyemin') {
         return `audio/voice_female_${action}.mp3`;
-      } else if (tuningState.speaker === 'minwoo_injoon') {
+      } else if (tuningState.speaker === 'male_b' || tuningState.speaker === 'minwoo_injoon') {
         return `audio/voice_male_injoon_${action}.mp3`;
       } else {
         return `audio/voice_male_${action}.mp3`;
@@ -692,12 +692,15 @@
     // -------------------------------------------------------------
     function applyTuningToDolboniApp() {
       // AppState에 반영될 키들
-      localStorage.setItem('dolboni_voice_speaker', tuningState.speaker);
+      const speakerAppKey = (tuningState.speaker === 'male_a' || tuningState.speaker === 'male_b' || tuningState.speaker === 'male') ? 'male' : 'female';
+      localStorage.setItem('dolboni_voice_speaker', speakerAppKey);
+      localStorage.setItem('dolboni_voice_sub_speaker', tuningState.speaker);
       localStorage.setItem('dolboni_voice_rate', tuningState.speed.toString());
       localStorage.setItem('dolboni_voice_detune', tuningState.pitch.toString());
       localStorage.setItem('dolboni_voice_offsets', JSON.stringify(tuningState.offsets));
 
-      alert(`[튜닝 설정 저장 완료!]\n\n• 선택 성우: ${tuningState.speaker}\n• 속도: ${tuningState.speed.toFixed(2)}x\n• 피치: ${(tuningState.pitch / 100).toFixed(1)} st (${tuningState.pitch} cents)\n• 싱크 딜레이: 들숨(${tuningState.offsets.inhale}s), 멈춤(${tuningState.offsets.hold}s), 날숨(${tuningState.offsets.exhale}s)\n\n돌보니 본 앱을 실행하시면 이 설정이 그대로 실시간 적용됩니다.`);
+      const speakerName = speakerAppKey === 'male' ? '남성 성우' : '여성 성우';
+      alert(`[튜닝 설정 저장 완료!]\n\n• 선택 성우: ${speakerName}\n• 속도: ${tuningState.speed.toFixed(2)}x\n• 피치: ${(tuningState.pitch / 100).toFixed(1)} st (${tuningState.pitch} cents)\n• 싱크 딜레이: 들숨(${tuningState.offsets.inhale}s), 멈춤(${tuningState.offsets.hold}s), 날숨(${tuningState.offsets.exhale}s)\n\n돌보니 본 앱을 실행하시면 이 설정이 그대로 실시간 적용됩니다.`);
     }
 
     // -------------------------------------------------------------

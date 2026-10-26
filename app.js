@@ -49,7 +49,7 @@ const AppState = {
   sessionStartTime: null,
   lastSessionDuration: 0,
   voiceEnabled: true,
-  voiceSpeaker: localStorage.getItem('dolboni_voice_speaker') || 'hyemin', // 'hyemin' (기본 여성) or 'minwoo' (남성)
+  voiceSpeaker: (localStorage.getItem('dolboni_voice_speaker') === 'male' || localStorage.getItem('dolboni_voice_speaker') === 'minwoo') ? 'male' : 'female', // 'female' (기본 여성) or 'male' (남성)
   currentBgm: 'music',
   hapticsEnabled: true,
   audioCtx: null,
@@ -224,13 +224,13 @@ function resolveVoiceFile(actionOrFile) {
   const customDataUrl = localStorage.getItem(customKey);
   if (customDataUrl) return customDataUrl;
 
-  // 2. 기본 AI 음원 매핑 (혜민 실장: voice_female_*, 민우 인준: voice_male_injoon_*, 민우 현수: voice_male_*)
-  if (AppState.voiceSpeaker === 'hyemin') {
-    return `audio/voice_female_${action}.mp3`;
-  } else if (AppState.voiceSpeaker === 'minwoo_injoon') {
+  // 2. 기본 AI 음원 매핑 (여성 성우: voice_female_*, 남성 성우: voice_male_*)
+  if (AppState.voiceSpeaker === 'male_b' || AppState.voiceSpeaker === 'minwoo_injoon') {
     return `audio/voice_male_injoon_${action}.mp3`;
-  } else {
+  } else if (AppState.voiceSpeaker === 'male' || AppState.voiceSpeaker === 'minwoo' || AppState.voiceSpeaker === 'minwoo_hyunsu') {
     return `audio/voice_male_${action}.mp3`;
+  } else {
+    return `audio/voice_female_${action}.mp3`;
   }
 }
 
@@ -275,8 +275,8 @@ function setVoiceSpeaker(speaker) {
 }
 
 function updateVoiceSpeakerUI() {
-  const btnHyemin = document.getElementById('btn-speaker-hyemin');
-  const btnMinwoo = document.getElementById('btn-speaker-minwoo');
+  const btnFemale = document.getElementById('btn-speaker-female') || document.getElementById('btn-speaker-hyemin');
+  const btnMale = document.getElementById('btn-speaker-male') || document.getElementById('btn-speaker-minwoo');
   const label = document.getElementById('now-playing-label');
 
   const bgmMap = {
@@ -288,22 +288,24 @@ function updateVoiceSpeakerUI() {
   };
   const bgmText = bgmMap[AppState.currentBgm] || '🎵 명상음악';
 
-  if (AppState.voiceSpeaker === 'minwoo') {
-    if (btnMinwoo) {
-      btnMinwoo.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-cyan-500 bg-cyan-500/25 text-cyan-200 shadow-sm flex items-center gap-1';
+  const isMale = AppState.voiceSpeaker === 'male' || AppState.voiceSpeaker === 'minwoo' || AppState.voiceSpeaker === 'minwoo_injoon' || AppState.voiceSpeaker === 'minwoo_hyunsu';
+
+  if (isMale) {
+    if (btnMale) {
+      btnMale.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-cyan-500 bg-cyan-500/25 text-cyan-200 shadow-sm flex items-center gap-1';
     }
-    if (btnHyemin) {
-      btnHyemin.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1';
+    if (btnFemale) {
+      btnFemale.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1';
     }
-    if (label) label.textContent = `${bgmText} · 🌿 민우`;
+    if (label) label.textContent = `${bgmText} · 🌿 남성 성우`;
   } else {
-    if (btnHyemin) {
-      btnHyemin.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-rose-500 bg-rose-500/25 text-rose-200 shadow-sm flex items-center gap-1';
+    if (btnFemale) {
+      btnFemale.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-rose-500 bg-rose-500/25 text-rose-200 shadow-sm flex items-center gap-1';
     }
-    if (btnMinwoo) {
-      btnMinwoo.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1';
+    if (btnMale) {
+      btnMale.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1';
     }
-    if (label) label.textContent = `${bgmText} · 🌸 혜민`;
+    if (label) label.textContent = `${bgmText} · 🌸 여성 성우`;
   }
 }
 

@@ -121,7 +121,7 @@
       
       <!-- 상단 컨트롤: 음성 안내 토글 + 5대 자연의 소리 선택 (한 줄에 쏙) -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-sm space-y-2 flex-shrink-0">
-        <!-- 음성 토글 & 성우 선택 (혜민/민우) & 현재 사운드 상태 -->
+        <!-- 음성 토글 & 성우 선택 (여성/남성) & 현재 사운드 상태 -->
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-1.5">
             <button type="button" id="btn-voice-toggle" onclick="toggleVoiceGuidance()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/60 text-emerald-300 font-extrabold text-[11px]">
@@ -129,15 +129,15 @@
               <span id="voice-title">음성 ON</span>
             </button>
             <div class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-xl border border-slate-700/60">
-              <button type="button" id="btn-speaker-hyemin" onclick="setVoiceSpeaker('hyemin')" class="speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-rose-500 bg-rose-500/25 text-rose-200 flex items-center gap-1">
-                <span>🌸</span> 혜민
+              <button type="button" id="btn-speaker-female" onclick="setVoiceSpeaker('female')" class="speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-rose-500 bg-rose-500/25 text-rose-200 flex items-center gap-1">
+                <span>🌸</span> 여성
               </button>
-              <button type="button" id="btn-speaker-minwoo" onclick="setVoiceSpeaker('minwoo')" class="speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1">
-                <span>🌿</span> 민우
+              <button type="button" id="btn-speaker-male" onclick="setVoiceSpeaker('male')" class="speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1">
+                <span>🌿</span> 남성
               </button>
             </div>
           </div>
-          <span id="now-playing-label" class="text-[10px] font-bold text-amber-400">🎵 명상음악 · 🌸 혜민</span>
+          <span id="now-playing-label" class="text-[10px] font-bold text-amber-400">🎵 명상음악 · 🌸 여성</span>
         </div>
 
         <!-- 5대 사운드 그리드 (명상음악, 빗소리, 새소리, 시냇물, 무음 순) -->
@@ -315,7 +315,7 @@
         <!-- 사운드 랩 (스튜디오) 링크 (비공개 관리실) -->
         <div class="mt-3 text-center">
           <a href="studio.html" class="text-[10px] text-slate-500 hover:text-indigo-400 inline-flex items-center gap-1">
-            <span>🎙️</span> 사운드 랩 (더 심온 실장 보이스 관리)
+            <span>🎙️</span> 사운드 랩 (성우 음색 & 싱크 튜닝실)
           </a>
         </div>
       </div>
