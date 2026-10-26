@@ -78,6 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initA2hsSystem();
   checkKakaoInAppBrowser();
 
+  // 원격 중앙 사운드 설정 동기화 (대표님 배포 설정 실시간 자동 수신)
+  loadRemoteConfig();
+
   // 앱 설치 선행 퍼널 확인 (일반 브라우저 접속 시 설치 유도 ➔ 스킵 또는 설치 후 로그인 게이트)
   checkInstallFirstFunnel();
 
@@ -764,7 +767,7 @@ function updateInstallFirstModalContent() {
       </div>
       <div class="flex items-center gap-2">
         <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
-        <span>화면 하단 중앙의 <strong>[공유 📤 버튼]</strong>을 누릅니다.</span>
+        <span>화면 <strong>하단 중앙(또는 주소창 우측 상단)</strong>의 <strong>[공유 📤 버튼]</strong>을 누릅니다.</span>
       </div>
       <div class="flex items-center gap-2">
         <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
@@ -772,8 +775,11 @@ function updateInstallFirstModalContent() {
       </div>
       <div class="flex items-center gap-2">
         <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">3</span>
-        <span>홈 화면에 생성된 <strong>'돌보니'</strong> 아이콘으로 실행!</span>
+        <span>우측 상단의 <strong>[추가]</strong>를 누르면 바탕화면에 설치 완료!</span>
       </div>
+      <p class="text-[10px] text-slate-400 mt-1 italic">
+        * 사파리는 하단 중앙 또는 우측 상단, 크롬은 주소창 우측 상단에 공유 [⎋] 아이콘이 있습니다.
+      </p>
     `;
   } else {
     if (btnText) btnText.textContent = '📲 1초 만에 바로 설치하기';
@@ -791,7 +797,7 @@ function updateInstallFirstModalContent() {
 function handleInstallFirstClick() {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   if (isIOS) {
-    alert('화면 하단의 [공유 📤] 아이콘을 누르신 후 [홈 화면에 추가]를 눌러주세요!');
+    alert('화면 하단 중앙(또는 주소창 우측 상단)의 [공유 📤] 아이콘을 누르신 후 [홈 화면에 추가]를 눌러주세요!');
   } else {
     if (AppState.deferredPrompt) {
       AppState.deferredPrompt.prompt();
@@ -875,7 +881,7 @@ function updateIosGuideContent() {
     bodyEl.innerHTML = `
       <div class="flex items-center gap-2.5">
         <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">1</span>
-        <span>화면 하단 중앙의 <strong>[공유 버튼 ⎋]</strong>을 누릅니다.</span>
+        <span>화면 <strong>하단 중앙(또는 주소창 우측 상단)</strong>의 <strong>[공유 버튼 ⎋]</strong>을 누릅니다.</span>
       </div>
       <div class="flex items-center gap-2.5">
         <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">2</span>
@@ -980,6 +986,32 @@ function loadUserFromStorage() {
     } catch (e) {}
   }
   AppState.guestPoints = parseInt(localStorage.getItem('dolboni_guest_points_v7') || '0');
+}
+
+async function loadRemoteConfig() {
+  try {
+    const resp = await fetch('./dolboni_config.json?t=' + Date.now());
+    if (resp.ok) {
+      const cfg = await resp.json();
+      const lastApplied = localStorage.getItem('dolboni_config_last_applied') || '0';
+      if (cfg.updated_at && cfg.updated_at > lastApplied) {
+        if (cfg.speed) localStorage.setItem('dolboni_voice_rate', cfg.speed.toString());
+        if (cfg.pitch !== undefined) localStorage.setItem('dolboni_voice_detune', cfg.pitch.toString());
+        if (cfg.offsets) localStorage.setItem('dolboni_voice_offsets', JSON.stringify(cfg.offsets));
+        if (cfg.speaker) {
+          const appSpeaker = (cfg.speaker === 'male_a' || cfg.speaker === 'male_b' || cfg.speaker === 'male') ? 'male' : 'female';
+          localStorage.setItem('dolboni_voice_speaker', appSpeaker);
+          localStorage.setItem('dolboni_voice_sub_speaker', cfg.speaker);
+          AppState.voiceSpeaker = appSpeaker;
+        }
+        localStorage.setItem('dolboni_config_last_applied', cfg.updated_at);
+        updateVoiceSpeakerUI();
+        console.log('[Dolboni] Synced official sound config from server:', cfg.updated_at);
+      }
+    }
+  } catch(e) {
+    console.warn('[Dolboni] Remote config fallback:', e);
+  }
 }
 
 function saveUserToStorage() {

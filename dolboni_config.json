@@ -1,0 +1,12 @@
+{
+  "speaker": "female",
+  "speed": 0.9,
+  "pitch": 50,
+  "offsets": {
+    "inhale": 0,
+    "hold": 0.1,
+    "exhale": 0,
+    "complete": 0.5
+  },
+  "updated_at": "2026-10-26T07:40:12.762Z"
+}

@@ -1,9 +1,10 @@
-const CACHE_NAME = 'dolboni-v8.5-auto-save-sync';
+const CACHE_NAME = 'dolboni-v8.7-oneclick-remote-deploy';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './app.js',
   './studio.html',
+  './dolboni_config.json',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -60,11 +61,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 1. 핵심 코드 (HTML, JS, manifest) ➔ Network-First (최신 코드 즉시 반영, 오프라인 시 캐시)
+  // 1. 핵심 코드 (HTML, JS, JSON 설정, manifest) ➔ Network-First (최신 코드 즉시 반영, 오프라인 시 캐시)
   const isCoreCode = 
     event.request.mode === 'navigate' ||
     url.pathname.endsWith('.html') ||
     url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.json') ||
     url.pathname.endsWith('manifest.json');
 
   if (isCoreCode) {
