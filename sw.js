@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v8.3-neutral-voice-names';
+const CACHE_NAME = 'dolboni-v8.4-web-app-label';
 const PRECACHE_URLS = [
   './',
   './index.html',
