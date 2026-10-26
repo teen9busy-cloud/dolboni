@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateHeaderUI();
   renderTeamStatusCard();
   initA2hsSystem();
+  checkKakaoInAppBrowser();
 
   // 최초 1회 웰컴 온보딩 게이트 확인
   checkWelcomeGate();
@@ -599,6 +600,31 @@ function showGuestRewardToast(points, drop, duration, totalGuest) {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
   }, 5000);
+}
+
+// ------------------------------------------------------------------------------
+// 9-1. 카카오톡 인앱 브라우저 탈출 및 외부 브라우저(사파리/크롬) 전환
+// ------------------------------------------------------------------------------
+function checkKakaoInAppBrowser() {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('kakaotalk')) {
+    const bar = document.getElementById('kakao-escape-bar');
+    if (bar) bar.classList.remove('hidden');
+  }
+}
+
+function escapeKakaoBrowser() {
+  const ua = navigator.userAgent.toLowerCase();
+  const targetUrl = window.location.href;
+  if (ua.includes('android')) {
+    const cleanUrl = targetUrl.replace(/^https?:\/\//i, '');
+    window.location.href = 'intent://' + cleanUrl + '#Intent;scheme=https;package=com.android.chrome;end';
+  } else {
+    window.location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(targetUrl);
+    setTimeout(() => {
+      alert('화면 우측 하단의 [···] 버튼을 누른 후 [Safari로 열기]를 선택해 주세요!');
+    }, 400);
+  }
 }
 
 // ------------------------------------------------------------------------------

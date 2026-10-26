@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v7.0-clean';
+const CACHE_NAME = 'dolboni-v7.1-kakao-outlink';
 const PRECACHE_URLS = [
   './',
   './index.html',

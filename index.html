@@ -5,6 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>돌보니 (Dolboni) - 소방 마음건강 마일리지 & 모바일 쉼터</title>
   
+  <!-- 카카오톡 인앱 브라우저 탈출 및 사파리/크롬 외부 브라우저 자동 전환 스크립트 -->
+  <script>
+    (function() {
+      var ua = navigator.userAgent.toLowerCase();
+      if (ua.indexOf('kakaotalk') !== -1) {
+        var targetUrl = window.location.href;
+        if (!sessionStorage.getItem('kakaotalk_escaped')) {
+          sessionStorage.setItem('kakaotalk_escaped', 'true');
+          if (ua.indexOf('android') !== -1) {
+            // 안드로이드: 크롬 인텐트로 즉시 외부 브라우저(Chrome) 실행
+            var cleanUrl = targetUrl.replace(/^https?:\/\//i, '');
+            window.location.href = 'intent://' + cleanUrl + '#Intent;scheme=https;package=com.android.chrome;end';
+          } else if (ua.indexOf('iphone') !== -1 || ua.indexOf('ipad') !== -1 || ua.indexOf('ipod') !== -1) {
+            // iOS: 카카오톡 전용 외부 브라우저 오픈 스킴 호출 (Safari 실행)
+            window.location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(targetUrl);
+          }
+        }
+      }
+    })();
+  </script>
+
   <!-- PWA 필수 메타 및 아이콘 설정 -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f172a">
@@ -48,6 +69,17 @@
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 flex flex-col justify-between font-sans antialiased">
+
+  <!-- 카카오톡 인앱 브라우저 감지 시 상단 탈출 안내 바 -->
+  <div id="kakao-escape-bar" class="hidden bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 px-3 py-2 text-xs font-bold flex items-center justify-between z-50 shadow-md">
+    <div class="flex items-center gap-1.5">
+      <span>⚠️</span>
+      <span>새 메시지 시 튕김 방지를 위해 외부 브라우저를 추천합니다</span>
+    </div>
+    <button onclick="escapeKakaoBrowser()" class="px-2.5 py-1 rounded-lg bg-slate-900 text-amber-400 font-black text-[11px] shrink-0 shadow">
+      사파리/크롬으로 열기 ➜
+    </button>
+  </div>
 
   <!-- ==================== 1. 상단 콤팩트 헤더 (고정) ==================== -->
   <header class="px-3.5 py-2 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md flex-shrink-0 z-40">
