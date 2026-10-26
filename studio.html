@@ -60,9 +60,9 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-base sm:text-lg font-black text-white">돌보니 사운드 랩 (Voice & Sync Studio)</h1>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">실시간 튜닝</span>
+            <span id="auto-save-indicator" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">실시간 연동 중</span>
           </div>
-          <p class="text-[11px] text-slate-400">피치(음높이) · 재생속도 · 4-4-6 호흡 싱크 타이밍 정밀 세팅</p>
+          <p class="text-[11px] text-slate-400">슬라이더를 움직이면 본 앱에 0초 만에 실시간 자동 저장됩니다</p>
         </div>
       </div>
       <a href="index.html" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-indigo-300 flex items-center gap-1.5 shadow">
@@ -382,11 +382,32 @@
     let audioBuffers = {};
 
     let tuningState = {
-      speaker: localStorage.getItem('dolboni_voice_speaker') || 'hyemin', // hyemin, minwoo_hyunsu, minwoo_injoon
-      speed: parseFloat(localStorage.getItem('dolboni_voice_rate') || '1.0'),
-      pitch: parseFloat(localStorage.getItem('dolboni_voice_detune') || '0'),
+      speaker: localStorage.getItem('dolboni_voice_speaker') || 'female',
+      speed: parseFloat(localStorage.getItem('dolboni_voice_rate') || '0.90'),
+      pitch: parseFloat(localStorage.getItem('dolboni_voice_detune') || '50'),
       offsets: JSON.parse(localStorage.getItem('dolboni_voice_offsets') || '{"inhale":0.0,"hold":0.1,"exhale":0.0,"complete":0.5}'),
     };
+
+    function autoSaveTuning() {
+      const speakerAppKey = (tuningState.speaker === 'male_a' || tuningState.speaker === 'male_b' || tuningState.speaker === 'male') ? 'male' : 'female';
+      localStorage.setItem('dolboni_voice_speaker', speakerAppKey);
+      localStorage.setItem('dolboni_voice_sub_speaker', tuningState.speaker);
+      localStorage.setItem('dolboni_voice_rate', tuningState.speed.toString());
+      localStorage.setItem('dolboni_voice_detune', tuningState.pitch.toString());
+      localStorage.setItem('dolboni_voice_offsets', JSON.stringify(tuningState.offsets));
+
+      const indicator = document.getElementById('auto-save-indicator');
+      if (indicator) {
+        indicator.textContent = '✓ 실시간 자동 저장됨';
+        indicator.className = 'text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 transition-all shadow';
+        setTimeout(() => {
+          if (indicator) {
+            indicator.textContent = '실시간 연동 중';
+            indicator.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition-all';
+          }
+        }, 1200);
+      }
+    }
 
     function initAudio() {
       if (!audioCtx) {
@@ -458,6 +479,7 @@
       }
 
       updateUploadStatusLabels();
+      autoSaveTuning();
       if (doPreview) previewTunedClip('intro');
     }
 
@@ -470,6 +492,7 @@
       if (currentSource) {
         try { currentSource.playbackRate.value = tuningState.speed; } catch (e) {}
       }
+      autoSaveTuning();
     }
 
     function updatePitchValue(val) {
@@ -479,19 +502,22 @@
       if (currentSource && currentSource.detune) {
         try { currentSource.detune.value = tuningState.pitch; } catch (e) {}
       }
+      autoSaveTuning();
     }
 
     function updateOffsetValue(phase, val) {
       tuningState.offsets[phase] = parseFloat(val);
       const label = document.getElementById(`label-offset-${phase}`);
       if (label) label.textContent = `${parseFloat(val).toFixed(1)}초`;
+      autoSaveTuning();
     }
 
     function resetTuningValues() {
-      tuningState.speed = 1.0;
-      tuningState.pitch = 0;
+      tuningState.speed = 0.90;
+      tuningState.pitch = 50;
       tuningState.offsets = { inhale: 0.0, hold: 0.1, exhale: 0.0, complete: 0.5 };
       applyStateToUI();
+      autoSaveTuning();
       previewTunedClip('intro');
     }
 

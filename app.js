@@ -250,9 +250,9 @@ async function playVoice(actionOrFile) {
   const source = AppState.audioCtx.createBufferSource();
   source.buffer = buffer;
 
-  // studio.html에서 튜닝한 속도(Rate) 및 피치(Detune Cents) 실시간 반영
-  const speed = parseFloat(localStorage.getItem('dolboni_voice_rate') || '1.0');
-  const pitch = parseFloat(localStorage.getItem('dolboni_voice_detune') || '0');
+  // studio.html에서 튜닝한 속도(Rate) 및 피치(Detune Cents) 실시간 반영 (대표님 최적 설정 기본값: 속도 0.90x, 피치 +50 cents)
+  const speed = parseFloat(localStorage.getItem('dolboni_voice_rate') || '0.90');
+  const pitch = parseFloat(localStorage.getItem('dolboni_voice_detune') || '50');
   source.playbackRate.value = speed;
   if (source.detune) {
     source.detune.value = pitch;

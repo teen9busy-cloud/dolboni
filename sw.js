@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v8.4-web-app-label';
+const CACHE_NAME = 'dolboni-v8.5-auto-save-sync';
 const PRECACHE_URLS = [
   './',
   './index.html',
