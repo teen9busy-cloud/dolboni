@@ -1,8 +1,9 @@
-const CACHE_NAME = 'dolboni-v7.1-kakao-outlink';
+const CACHE_NAME = 'dolboni-v8.0-network-first';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './app.js',
+  './studio.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -10,20 +11,25 @@ const PRECACHE_URLS = [
   './audio/bgm_rain.mp3',
   './audio/bgm_birds.mp3',
   './audio/bgm_stream.mp3',
-  './audio/voice_intro.mp3',
-  './audio/voice_inhale.mp3',
-  './audio/voice_hold.mp3',
-  './audio/voice_exhale.mp3',
-  './audio/voice_complete.mp3',
+  './audio/voice_female_intro.mp3',
+  './audio/voice_female_inhale.mp3',
+  './audio/voice_female_hold.mp3',
+  './audio/voice_female_exhale.mp3',
+  './audio/voice_female_complete.mp3',
+  './audio/voice_male_intro.mp3',
+  './audio/voice_male_inhale.mp3',
+  './audio/voice_male_hold.mp3',
+  './audio/voice_male_exhale.mp3',
+  './audio/voice_male_complete.mp3',
   'https://cdn.tailwindcss.com',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Dolboni SW] Precaching offline resources');
+      console.log('[Dolboni SW v8] Precaching offline resources');
       return cache.addAll(PRECACHE_URLS).catch((err) => {
-        console.warn('[Dolboni SW] Precache warning:', err);
+        console.warn('[Dolboni SW v8] Precache warning:', err);
       });
     })
   );
@@ -36,7 +42,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((name) => {
           if (name !== CACHE_NAME) {
-            console.log('[Dolboni SW] Deleting old cache:', name);
+            console.log('[Dolboni SW v8] Deleting old cache:', name);
             return caches.delete(name);
           }
         })
@@ -47,31 +53,50 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 캐시 우선 전략 (Cache First, fallback to Network)
+  const url = new URL(event.request.url);
+
+  // 1. 핵심 코드 (HTML, JS, manifest) ➔ Network-First (최신 코드 즉시 반영, 오프라인 시 캐시)
+  const isCoreCode = 
+    event.request.mode === 'navigate' ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('manifest.json');
+
+  if (isCoreCode) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(event.request).then((cached) => {
+            return cached || caches.match('./index.html');
+          });
+        })
+    );
+    return;
+  }
+
+  // 2. 대용량 미디어 (MP3 오디오, 이미지, 폰트) ➔ Cache-First (초고속 오프라인 재생, 데이터 절약)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
       return fetch(event.request).then((networkResponse) => {
-        if (
-          !networkResponse ||
-          networkResponse.status !== 200 ||
-          networkResponse.type !== 'basic'
-        ) {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
           return networkResponse;
         }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+        const responseClone = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
         return networkResponse;
+      }).catch((err) => {
+        console.warn('[Dolboni SW v8] Fetch failed for:', event.request.url, err);
       });
-    }).catch(() => {
-      // 오프라인 상태에서 HTML 요청인 경우 캐시된 index.html 반환
-      if (event.request.headers.get('accept').includes('text/html')) {
-        return caches.match('./index.html');
-      }
     })
   );
 });

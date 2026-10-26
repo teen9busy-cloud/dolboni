@@ -49,6 +49,7 @@ const AppState = {
   sessionStartTime: null,
   lastSessionDuration: 0,
   voiceEnabled: true,
+  voiceSpeaker: localStorage.getItem('dolboni_voice_speaker') || 'hyemin', // 'hyemin' (기본 여성) or 'minwoo' (남성)
   currentBgm: 'music',
   hapticsEnabled: true,
   audioCtx: null,
@@ -72,12 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
   loadUserFromStorage();
   loadStatsFromStorage();
   updateHeaderUI();
+  updateVoiceSpeakerUI();
   renderTeamStatusCard();
   initA2hsSystem();
   checkKakaoInAppBrowser();
 
-  // 최초 1회 웰컴 온보딩 게이트 확인
-  checkWelcomeGate();
+  // 앱 설치 선행 퍼널 확인 (일반 브라우저 접속 시 설치 유도 ➔ 스킵 또는 설치 후 로그인 게이트)
+  checkInstallFirstFunnel();
 
   // 음원 네트워크 사전 캐시
   try {
@@ -189,10 +191,14 @@ async function loadAudioBuffer(url) {
 
 function preloadAudio() {
   const preloadList = [
-    'audio/voice_inhale.mp3',
-    'audio/voice_hold.mp3',
-    'audio/voice_exhale.mp3',
-    'audio/voice_complete.mp3',
+    'audio/voice_female_inhale.mp3',
+    'audio/voice_female_hold.mp3',
+    'audio/voice_female_exhale.mp3',
+    'audio/voice_female_complete.mp3',
+    'audio/voice_male_inhale.mp3',
+    'audio/voice_male_hold.mp3',
+    'audio/voice_male_exhale.mp3',
+    'audio/voice_male_complete.mp3',
     'audio/bgm_music.mp3',
   ];
   preloadList.forEach(url => loadAudioBuffer(url));
@@ -208,14 +214,32 @@ function stopVoice() {
   }
 }
 
-async function playVoice(filename) {
+function resolveVoiceFile(actionOrFile) {
+  let action = actionOrFile;
+  if (action.endsWith('.mp3')) {
+    action = action.replace('voice_', '').replace('.mp3', '');
+  }
+  // 1. studio.html에서 사용자가 업로드한 커스텀 음원이 있는지 확인
+  const customKey = `dolboni_custom_voice_${AppState.voiceSpeaker}_${action}`;
+  const customDataUrl = localStorage.getItem(customKey);
+  if (customDataUrl) return customDataUrl;
+
+  // 2. 기본 AI 음원 매핑 (혜민 실장: voice_female_*, 민우 실장: voice_male_*)
+  const prefix = AppState.voiceSpeaker === 'minwoo' ? 'voice_male_' : 'voice_female_';
+  return `audio/${prefix}${action}.mp3`;
+}
+
+async function playVoice(actionOrFile) {
   if (!AppState.voiceEnabled) return;
   initAudioEngine();
   stopVoice();
 
-  if (!AppState.isBreathing && filename !== 'voice_complete.mp3') return;
+  if (!AppState.isBreathing && actionOrFile !== 'complete' && actionOrFile !== 'voice_complete.mp3' && actionOrFile !== 'intro' && actionOrFile !== 'voice_intro.mp3') {
+    return;
+  }
 
-  const buffer = await loadAudioBuffer(`audio/${filename}`);
+  const url = resolveVoiceFile(actionOrFile);
+  const buffer = await loadAudioBuffer(url);
   if (!buffer || !AppState.audioCtx) return;
 
   const source = AppState.audioCtx.createBufferSource();
@@ -226,6 +250,47 @@ async function playVoice(filename) {
   };
   source.start(0);
   AppState.voiceSource = source;
+}
+
+function setVoiceSpeaker(speaker) {
+  AppState.voiceSpeaker = speaker;
+  localStorage.setItem('dolboni_voice_speaker', speaker);
+  updateVoiceSpeakerUI();
+  // 실시간 변경 체감을 위한 부드러운 안내음 재생
+  playVoice('intro');
+}
+
+function updateVoiceSpeakerUI() {
+  const btnHyemin = document.getElementById('btn-speaker-hyemin');
+  const btnMinwoo = document.getElementById('btn-speaker-minwoo');
+  const label = document.getElementById('now-playing-label');
+
+  const bgmMap = {
+    music: '🎵 명상음악',
+    rain: '🌧️ 빗소리',
+    birds: '🌲 새소리',
+    stream: '🌊 시냇물',
+    mute: '🔇 무음'
+  };
+  const bgmText = bgmMap[AppState.currentBgm] || '🎵 명상음악';
+
+  if (AppState.voiceSpeaker === 'minwoo') {
+    if (btnMinwoo) {
+      btnMinwoo.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-cyan-500 bg-cyan-500/25 text-cyan-200 shadow-sm flex items-center gap-1';
+    }
+    if (btnHyemin) {
+      btnHyemin.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1';
+    }
+    if (label) label.textContent = `${bgmText} · 🌿 민우`;
+  } else {
+    if (btnHyemin) {
+      btnHyemin.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-rose-500 bg-rose-500/25 text-rose-200 shadow-sm flex items-center gap-1';
+    }
+    if (btnMinwoo) {
+      btnMinwoo.className = 'speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1';
+    }
+    if (label) label.textContent = `${bgmText} · 🌸 혜민`;
+  }
 }
 
 async function playBgm(type) {
@@ -274,7 +339,8 @@ function selectBgm(type, btn) {
     stream: '🌊 시냇물',
     mute: '🔇 무음',
   };
-  document.getElementById('now-playing-label').textContent = labelMap[type] || '';
+  AppState.currentBgm = type;
+  updateVoiceSpeakerUI();
   playBgm(type);
 }
 
@@ -625,6 +691,100 @@ function escapeKakaoBrowser() {
       alert('화면 우측 하단의 [···] 버튼을 누른 후 [Safari로 열기]를 선택해 주세요!');
     }, 400);
   }
+}
+
+// ------------------------------------------------------------------------------
+// 9-1. 앱 설치 선행 퍼널 (Install-First Funnel) 시스템
+// ------------------------------------------------------------------------------
+function checkInstallFirstFunnel() {
+  if (isStandaloneMode()) {
+    // 이미 PWA 앱으로 설치되어 실행 중인 경우
+    // 설치 유도 화면은 완전히 건너뛰고, 로그인/온보딩 게이트 실행
+    const installFirstModal = document.getElementById('modal-install-first');
+    if (installFirstModal) installFirstModal.classList.add('hidden');
+    checkWelcomeGate();
+    return;
+  }
+
+  // 브라우저 접속 (사파리, 크롬 등)인 경우
+  const skipped = sessionStorage.getItem('dolboni_install_skipped');
+  if (!skipped) {
+    const installFirstModal = document.getElementById('modal-install-first');
+    if (installFirstModal) {
+      updateInstallFirstModalContent();
+      installFirstModal.classList.remove('hidden');
+      return;
+    }
+  }
+
+  checkWelcomeGate();
+}
+
+function updateInstallFirstModalContent() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const guideBox = document.getElementById('install-first-guide-box');
+  const btnText = document.getElementById('install-first-btn-text');
+
+  if (!guideBox) return;
+
+  if (isIOS) {
+    if (btnText) btnText.textContent = '아이폰 설치 방법 안내';
+    guideBox.innerHTML = `
+      <div class="flex items-center gap-2 text-indigo-300 font-bold mb-1">
+        <span>🍎</span> <span>아이폰(iOS) 설치 3초 가이드</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
+        <span>화면 하단 중앙의 <strong>[공유 📤 버튼]</strong>을 누릅니다.</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
+        <span>메뉴를 올려 <strong>[홈 화면에 추가 ➕]</strong>를 선택합니다.</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">3</span>
+        <span>홈 화면에 생성된 <strong>'돌보니'</strong> 아이콘으로 실행!</span>
+      </div>
+    `;
+  } else {
+    if (btnText) btnText.textContent = '📲 1초 만에 바로 설치하기';
+    guideBox.innerHTML = `
+      <div class="flex items-center gap-2 text-emerald-300 font-bold mb-1">
+        <span>🤖</span> <span>안드로이드 원클릭 설치</span>
+      </div>
+      <p class="text-slate-300 text-[11px] leading-relaxed">
+        아래 [1초 만에 바로 설치하기] 버튼을 누르시면 홈 화면에 앱스토어 설치 없이 즉시 어플이 생성됩니다.
+      </p>
+    `;
+  }
+}
+
+function handleInstallFirstClick() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (isIOS) {
+    alert('화면 하단의 [공유 📤] 아이콘을 누르신 후 [홈 화면에 추가]를 눌러주세요!');
+  } else {
+    if (AppState.deferredPrompt) {
+      AppState.deferredPrompt.prompt();
+      AppState.deferredPrompt.userChoice.then((choice) => {
+        if (choice && choice.outcome === 'accepted') {
+          sessionStorage.setItem('dolboni_install_skipped', 'true');
+          const modal = document.getElementById('modal-install-first');
+          if (modal) modal.classList.add('hidden');
+          checkWelcomeGate();
+        }
+      });
+    } else {
+      openA2hsGuide();
+    }
+  }
+}
+
+function skipInstallFirst() {
+  sessionStorage.setItem('dolboni_install_skipped', 'true');
+  const modal = document.getElementById('modal-install-first');
+  if (modal) modal.classList.add('hidden');
+  checkWelcomeGate();
 }
 
 // ------------------------------------------------------------------------------

@@ -121,13 +121,23 @@
       
       <!-- 상단 컨트롤: 음성 안내 토글 + 5대 자연의 소리 선택 (한 줄에 쏙) -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-sm space-y-2 flex-shrink-0">
-        <!-- 음성 토글 & 현재 사운드 상태 -->
+        <!-- 음성 토글 & 성우 선택 (혜민/민우) & 현재 사운드 상태 -->
         <div class="flex items-center justify-between">
-          <button type="button" id="btn-voice-toggle" onclick="toggleVoiceGuidance()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/60 text-emerald-300 font-extrabold text-xs">
-            <span id="voice-icon">🗣️</span>
-            <span id="voice-title">성우 음성 ON</span>
-          </button>
-          <span id="now-playing-label" class="text-[11px] font-bold text-amber-400">🎵 명상음악</span>
+          <div class="flex items-center gap-1.5">
+            <button type="button" id="btn-voice-toggle" onclick="toggleVoiceGuidance()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/60 text-emerald-300 font-extrabold text-[11px]">
+              <span id="voice-icon">🗣️</span>
+              <span id="voice-title">음성 ON</span>
+            </button>
+            <div class="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-xl border border-slate-700/60">
+              <button type="button" id="btn-speaker-hyemin" onclick="setVoiceSpeaker('hyemin')" class="speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-rose-500 bg-rose-500/25 text-rose-200 flex items-center gap-1">
+                <span>🌸</span> 혜민
+              </button>
+              <button type="button" id="btn-speaker-minwoo" onclick="setVoiceSpeaker('minwoo')" class="speaker-btn px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1">
+                <span>🌿</span> 민우
+              </button>
+            </div>
+          </div>
+          <span id="now-playing-label" class="text-[10px] font-bold text-amber-400">🎵 명상음악 · 🌸 혜민</span>
         </div>
 
         <!-- 5대 사운드 그리드 (명상음악, 빗소리, 새소리, 시냇물, 무음 순) -->
@@ -301,10 +311,48 @@
             설치 안내
           </button>
         </div>
+
+        <!-- 사운드 랩 (스튜디오) 링크 (비공개 관리실) -->
+        <div class="mt-3 text-center">
+          <a href="studio.html" class="text-[10px] text-slate-500 hover:text-indigo-400 inline-flex items-center gap-1">
+            <span>🎙️</span> 사운드 랩 (더 심온 실장 보이스 관리)
+          </a>
+        </div>
       </div>
     </section>
 
   </main>
+
+  <!-- ==================== 0. 앱 설치 선행 유도 모달 (일반 브라우저 첫 접속 시) ==================== -->
+  <div id="modal-install-first" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-indigo-500/40 rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl text-white space-y-4 text-center">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg text-2xl font-black text-white">
+        돌
+      </div>
+      <div>
+        <h2 class="text-base sm:text-lg font-black text-white">홈 화면에 '돌보니'를 추가해주세요</h2>
+        <p class="text-xs text-slate-400 mt-1">출동 시 튕김 없는 1초 실행과 마일리지 보관을 위해 앱 설치를 권장합니다</p>
+      </div>
+
+      <!-- 기기별(iOS vs Android) 맞춤 가이드 -->
+      <div id="install-first-guide-box" class="bg-slate-800/80 border border-slate-700 rounded-2xl p-3.5 text-left text-xs space-y-2.5">
+        <!-- JS로 동적 주입 -->
+      </div>
+
+      <div class="space-y-2 pt-1">
+        <button id="btn-install-first-action" onclick="handleInstallFirstClick()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 font-black text-sm text-white shadow-xl flex items-center justify-center gap-2">
+          <span>📲</span> <span id="install-first-btn-text">홈 화면에 앱 설치하기</span>
+        </button>
+        <button type="button" onclick="skipInstallFirst()" class="w-full py-2 text-xs text-slate-400 hover:text-slate-200 underline font-medium">
+          설치 없이 웹 브라우저로 먼저 둘러보기 ➜
+        </button>
+      </div>
+
+      <p class="text-[10px] text-slate-500">
+        * 홈 화면 아이콘으로 실행 시 전체화면 전용 쉼터로 구동됩니다.
+      </p>
+    </div>
+  </div>
 
   <!-- ==================== 웰컴 온보딩 게이트 모달 (최초 접속 1회 선택) ==================== -->
   <div id="modal-welcome-gate" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
