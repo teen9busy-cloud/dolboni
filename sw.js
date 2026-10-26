@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v8.1-clean-stats';
+const CACHE_NAME = 'dolboni-v8.2-voice-tuning-lab';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -21,6 +21,11 @@ const PRECACHE_URLS = [
   './audio/voice_male_hold.mp3',
   './audio/voice_male_exhale.mp3',
   './audio/voice_male_complete.mp3',
+  './audio/voice_male_injoon_intro.mp3',
+  './audio/voice_male_injoon_inhale.mp3',
+  './audio/voice_male_injoon_hold.mp3',
+  './audio/voice_male_injoon_exhale.mp3',
+  './audio/voice_male_injoon_complete.mp3',
   'https://cdn.tailwindcss.com',
 ];
 

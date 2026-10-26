@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>돌보니 사운드 랩 (Dolboni Sound Studio)</title>
+  <title>돌보니 사운드 랩 (Dolboni Sound Studio) - 피치·속도·싱크 튜닝</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
@@ -12,14 +12,10 @@
       color: #f1f5f9;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       padding-top: max(env(safe-area-inset-top), 10px);
-      padding-bottom: max(env(safe-area-inset-bottom), 20px);
+      padding-bottom: max(env(safe-area-inset-bottom), 24px);
     }
-    .custom-scroll::-webkit-scrollbar {
-      width: 6px;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 4px;
+    input[type=range] {
+      accent-color: #6366f1;
     }
   </style>
 </head>
@@ -29,11 +25,11 @@
   <div id="pin-modal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl space-y-4">
       <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-600/30 border border-indigo-500/50 flex items-center justify-center text-2xl">
-        🎙️
+        🎛️
       </div>
       <div>
-        <h2 class="text-lg font-black text-white">사운드 스튜디오 인증</h2>
-        <p class="text-xs text-slate-400 mt-1">성우 튜닝 및 음원 관리를 위한 마스터 PIN을 입력하세요</p>
+        <h2 class="text-lg font-black text-white">사운드 랩 마스터 인증</h2>
+        <p class="text-xs text-slate-400 mt-1">성우 피치·속도·호흡 싱크 조절을 위한 PIN을 입력하세요</p>
       </div>
       <div class="space-y-2">
         <input type="password" id="studio-pin-input" maxlength="6" placeholder="마스터 PIN (기본: 119)" 
@@ -48,12 +44,12 @@
           앱으로
         </a>
       </div>
-      <p class="text-[10px] text-slate-500">주식회사 밸류플러스 쉼터 사운드 연구소</p>
+      <p class="text-[10px] text-slate-500">주식회사 밸류플러스 쉼터 사운드 연구실</p>
     </div>
   </div>
 
   <!-- ==================== 2. 사운드 랩 메인 컨테이너 ==================== -->
-  <main class="w-full max-w-3xl space-y-4 hidden" id="studio-main">
+  <main class="w-full max-w-3xl space-y-5 hidden" id="studio-main">
     
     <!-- 상단 헤더 -->
     <header class="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-5 flex items-center justify-between shadow-xl">
@@ -63,80 +59,231 @@
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-base sm:text-lg font-black text-white">돌보니 사운드 랩 (Studio)</h1>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">v8.0</span>
+            <h1 class="text-base sm:text-lg font-black text-white">돌보니 사운드 랩 (Voice & Sync Studio)</h1>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">실시간 튜닝</span>
           </div>
-          <p class="text-[11px] text-slate-400">더 심온 실장 보이스(혜민/민우) 청음 & 실녹음 커스텀 관리실</p>
+          <p class="text-[11px] text-slate-400">피치(음높이) · 재생속도 · 4-4-6 호흡 싱크 타이밍 정밀 세팅</p>
         </div>
       </div>
-      <a href="index.html" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-indigo-300 flex items-center gap-1.5 shadow">
-        <span>📲</span> 돌보니 앱 열기
+      <a href="index.html" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-indigo-300 flex items-center gap-1.5 shadow">
+        <span>📲</span> 돌보니 앱 가기
       </a>
     </header>
 
-    <!-- 성우 선택기 (혜민 실장 vs 민우 실장) -->
-    <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 space-y-4 shadow-lg">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+    <!-- SECTION 1: 성우 음색 선택 -->
+    <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 space-y-3 shadow-lg">
+      <div class="flex items-center justify-between">
         <div>
           <h2 class="text-sm font-black text-white flex items-center gap-2">
-            <span>🗣️</span> 관리 대상 성우 선택
+            <span>🗣️</span> 1. 기본 성우 음색 선택
           </h2>
-          <p class="text-xs text-slate-400 mt-0.5">기본 권장: 혜민 실장 (소방관 남성 비율 고려한 포근한 상담사 톤)</p>
-        </div>
-        <div class="flex gap-2">
-          <button id="tab-btn-hyemin" onclick="selectSpeaker('hyemin')" class="px-4 py-2 rounded-xl text-xs font-black border border-rose-500 bg-rose-500/20 text-rose-300 shadow flex items-center gap-1.5">
-            <span>🌸</span> 혜민 실장 (여성·기본)
-          </button>
-          <button id="tab-btn-minwoo" onclick="selectSpeaker('minwoo')" class="px-4 py-2 rounded-xl text-xs font-black border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1.5">
-            <span>🌿</span> 민우 실장 (남성)
-          </button>
+          <p class="text-xs text-slate-400 mt-0.5">원하시는 성우 음색을 선택한 후 아래에서 피치와 속도를 조절하세요</p>
         </div>
       </div>
 
-      <!-- 5대 핵심 클립 목록 -->
-      <div class="space-y-2.5">
-        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">5대 공명 호흡 음원 클립</h3>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="clips-container">
-          <!-- 동적 렌더링 영역 -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+        <!-- 혜민 실장 (선희) -->
+        <button id="btn-voice-hyemin" onclick="setSpeakerMode('hyemin')" class="p-3 rounded-2xl border-2 border-rose-500 bg-rose-500/20 text-left transition flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-base">🌸</span>
+            <span id="badge-hyemin" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500 text-white">선택됨</span>
+          </div>
+          <div class="mt-2">
+            <h4 class="text-xs font-black text-white">혜민 실장 (여성)</h4>
+            <p class="text-[10px] text-rose-200 mt-0.5">차분하고 포근한 상담사 톤</p>
+          </div>
+        </button>
+
+        <!-- 민우 실장 A (현수) -->
+        <button id="btn-voice-minwoo-a" onclick="setSpeakerMode('minwoo_hyunsu')" class="p-3 rounded-2xl border border-slate-700 bg-slate-800/80 text-left transition flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-base">🌿</span>
+            <span id="badge-minwoo-a" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-300 hidden">선택됨</span>
+          </div>
+          <div class="mt-2">
+            <h4 class="text-xs font-black text-white">민우 실장 A (남성)</h4>
+            <p class="text-[10px] text-slate-400 mt-0.5">다정하고 현대적인 청년 톤</p>
+          </div>
+        </button>
+
+        <!-- 민우 실장 B (인준) -->
+        <button id="btn-voice-minwoo-b" onclick="setSpeakerMode('minwoo_injoon')" class="p-3 rounded-2xl border border-slate-700 bg-slate-800/80 text-left transition flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-base">🌲</span>
+            <span id="badge-minwoo-b" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-300 hidden">선택됨</span>
+          </div>
+          <div class="mt-2">
+            <h4 class="text-xs font-black text-white">민우 실장 B (남성)</h4>
+            <p class="text-[10px] text-slate-400 mt-0.5">묵직하고 깊은 중저음 명상 톤</p>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- SECTION 2: 피치(Pitch) & 속도(Speed) 실시간 정밀 튜닝 랩 -->
+    <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 space-y-4 shadow-lg">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <h2 class="text-sm font-black text-white flex items-center gap-2">
+            <span>🎚️</span> 2. 피치(음높이) & 속도 실시간 조절
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">슬라이더를 움직여 가장 마음에 드는 음색을 찾아보세요</p>
+        </div>
+        <button onclick="resetTuningValues()" class="text-xs font-bold text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700">
+          기본값 복원
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- 속도 조절 -->
+        <div class="bg-slate-800/60 p-3.5 rounded-2xl border border-slate-700/60 space-y-2">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span class="text-slate-300">말하기 속도 (Playback Rate)</span>
+            <span id="label-speed-val" class="text-indigo-400 font-mono text-sm font-black">1.00x</span>
+          </div>
+          <input type="range" id="slider-speed" min="0.75" max="1.25" step="0.05" value="1.00" oninput="updateSpeedValue(this.value)" class="w-full h-2 bg-slate-700 rounded-lg cursor-pointer">
+          <div class="flex justify-between text-[10px] text-slate-500 font-medium">
+            <span>0.75x (느긋하게)</span>
+            <span>1.00x (표준)</span>
+            <span>1.25x (빠르게)</span>
+          </div>
+        </div>
+
+        <!-- 피치 조절 -->
+        <div class="bg-slate-800/60 p-3.5 rounded-2xl border border-slate-700/60 space-y-2">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span class="text-slate-300">음높이 / 피치 (Detune Cents)</span>
+            <span id="label-pitch-val" class="text-cyan-400 font-mono text-sm font-black">0 st (원음)</span>
+          </div>
+          <input type="range" id="slider-pitch" min="-400" max="400" step="50" value="0" oninput="updatePitchValue(this.value)" class="w-full h-2 bg-slate-700 rounded-lg cursor-pointer">
+          <div class="flex justify-between text-[10px] text-slate-500 font-medium">
+            <span>-4 반음 (낮고 중후하게)</span>
+            <span>0 (원음)</span>
+            <span>+4 반음 (높고 화사하게)</span>
+          </div>
         </div>
       </div>
 
-      <!-- 4-4-6 실시간 호흡 오디오 싱크 시뮬레이터 -->
-      <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <h4 class="text-xs font-black text-white flex items-center gap-1.5">
-              <span>⏱️</span> 4-4-6 공명 호흡 실시간 싱크 시뮬레이터
-            </h4>
-            <p class="text-[11px] text-slate-400 mt-0.5">들숨(4초) ➔ 멈춤(4초) ➔ 날숨(6초) 음성 재생 싱크를 직접 검증합니다</p>
-          </div>
-          <button id="btn-sync-test" onclick="toggleSyncSimulator()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md">
-            ▶️ 싱크 테스트 시작
+      <!-- 테스트 샘플 즉시 청음 버튼들 -->
+      <div class="pt-1 space-y-2">
+        <span class="text-xs font-bold text-slate-400">단어별 튜닝 효과 즉시 들어보기:</span>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+          <button onclick="previewTunedClip('intro')" class="py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700">
+            ▶️ 도입
           </button>
-        </div>
-
-        <div id="sync-stage" class="hidden flex flex-col items-center justify-center py-4 bg-slate-900/50 rounded-xl border border-slate-800">
-          <div class="relative w-28 h-28 flex items-center justify-center">
-            <div id="sim-glow" class="absolute inset-0 rounded-full bg-emerald-500/20 blur-md"></div>
-            <div id="sim-circle" class="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 flex flex-col items-center justify-center text-white shadow-lg transform transition-transform duration-700 scale-90">
-              <span id="sim-phase" class="text-xs font-black">준비</span>
-              <span id="sim-timer" class="text-lg font-black">4-4-6</span>
-            </div>
-          </div>
-          <p id="sim-desc" class="text-xs font-bold text-emerald-300 mt-2">잠시 후 호흡 안내가 시작됩니다...</p>
+          <button onclick="previewTunedClip('inhale')" class="py-2 px-2 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 text-xs font-bold border border-blue-500/40">
+            ▶️ 들숨 (4초)
+          </button>
+          <button onclick="previewTunedClip('hold')" class="py-2 px-2 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 text-amber-200 text-xs font-bold border border-amber-500/40">
+            ▶️ 멈춤 (4초)
+          </button>
+          <button onclick="previewTunedClip('exhale')" class="py-2 px-2 rounded-xl bg-teal-600/30 hover:bg-teal-600/50 text-teal-200 text-xs font-bold border border-teal-500/40">
+            ▶️ 날숨 (6초)
+          </button>
+          <button onclick="previewTunedClip('complete')" class="py-2 px-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 text-xs font-bold border border-purple-500/40 col-span-2 sm:col-span-1">
+            ▶️ 완료 축하
+          </button>
         </div>
       </div>
     </section>
 
-    <!-- 대표님 직접 녹음 & 커스텀 파일 업로더 -->
+    <!-- SECTION 3: 4-4-6 호흡 구간별 싱크 타이밍 (Delay Offset) 조절 -->
+    <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 space-y-4 shadow-lg">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <h2 class="text-sm font-black text-white flex items-center gap-2">
+            <span>⏱️</span> 3. 4-4-6 호흡 싱크 타이밍 (시작 지연 딜레이)
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            원의 애니메이션이 시작된 후 몇 초 뒤에 음성이 나오게 할지 맞춥니다
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- 들숨 싱크 -->
+        <div class="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60 space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span class="text-blue-300">들숨(4초) 시작 딜레이</span>
+            <span id="label-offset-inhale" class="text-white font-mono">0.0초</span>
+          </div>
+          <input type="range" id="slider-offset-inhale" min="0.0" max="1.5" step="0.1" value="0.0" oninput="updateOffsetValue('inhale', this.value)" class="w-full h-2 bg-slate-700 rounded-lg cursor-pointer">
+          <p class="text-[10px] text-slate-400">원 커짐과 동시 또는 약간 뒤 시작</p>
+        </div>
+
+        <!-- 멈춤 싱크 -->
+        <div class="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60 space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span class="text-amber-300">멈춤(4초) 시작 딜레이</span>
+            <span id="label-offset-hold" class="text-white font-mono">0.1초</span>
+          </div>
+          <input type="range" id="slider-offset-hold" min="0.0" max="1.5" step="0.1" value="0.1" oninput="updateOffsetValue('hold', this.value)" class="w-full h-2 bg-slate-700 rounded-lg cursor-pointer">
+          <p class="text-[10px] text-slate-400">숨을 다 들이마신 직후 멈춤 멘트</p>
+        </div>
+
+        <!-- 날숨 싱크 -->
+        <div class="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60 space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-bold">
+            <span class="text-teal-300">날숨(6초) 시작 딜레이</span>
+            <span id="label-offset-exhale" class="text-white font-mono">0.0초</span>
+          </div>
+          <input type="range" id="slider-offset-exhale" min="0.0" max="1.5" step="0.1" value="0.0" oninput="updateOffsetValue('exhale', this.value)" class="w-full h-2 bg-slate-700 rounded-lg cursor-pointer">
+          <p class="text-[10px] text-slate-400">원 작아짐과 동시에 내쉼 멘트</p>
+        </div>
+      </div>
+
+      <!-- 4-4-6 싱크 검증 시뮬레이터 -->
+      <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="text-xs font-black text-white flex items-center gap-1.5">
+              <span>🎯</span> 4-4-6 공명 호흡 싱크 시뮬레이터
+            </h4>
+            <p class="text-[11px] text-slate-400 mt-0.5">설정하신 피치·속도·딜레이가 적용된 호흡 사이클을 눈과 귀로 검증합니다</p>
+          </div>
+          <button id="btn-sync-test" onclick="toggleSyncSimulator()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md">
+            ▶️ 싱크 시뮬레이터 실행
+          </button>
+        </div>
+
+        <div id="sync-stage" class="hidden flex flex-col items-center justify-center py-6 bg-slate-900/60 rounded-xl border border-slate-800">
+          <div class="relative w-36 h-36 flex items-center justify-center">
+            <div id="sim-glow" class="absolute inset-0 rounded-full bg-emerald-500/20 blur-lg transition-transform duration-1000 scale-75"></div>
+            <div id="sim-circle" class="w-24 h-24 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 flex flex-col items-center justify-center text-white shadow-xl transform transition-transform duration-700 scale-90">
+              <span id="sim-phase" class="text-xs font-black">시작</span>
+              <span id="sim-timer" class="text-2xl font-black">4-4-6</span>
+            </div>
+          </div>
+          <p id="sim-desc" class="text-xs font-bold text-emerald-300 mt-3">준비 중...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: 돌보니 앱에 즉시 적용 및 영구 반영 -->
+    <section class="bg-gradient-to-r from-indigo-900/40 via-purple-900/40 to-slate-900 border border-indigo-500/50 rounded-3xl p-5 shadow-2xl space-y-3 text-center">
+      <h3 class="text-base font-black text-white">💾 최적의 튜닝 세팅을 찾으셨나요?</h3>
+      <p class="text-xs text-indigo-200">
+        아래 버튼을 누르시면 지금 조정한 성우·피치·속도·싱크 딜레이가 <strong>돌보니 본 앱에 즉시 100% 반영</strong>됩니다.
+      </p>
+
+      <div class="pt-2 flex flex-col sm:flex-row gap-2.5 justify-center">
+        <button onclick="applyTuningToDolboniApp()" class="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black text-sm shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2">
+          <span>✨</span> 돌보니 본 앱에 튜닝 설정 즉시 적용하기
+        </button>
+        <a href="index.html" class="px-5 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center border border-slate-700">
+          돌보니 앱으로 돌아가기 ➜
+        </a>
+      </div>
+    </section>
+
+    <!-- SECTION 5: 대표님 직접 녹음 & 커스텀 파일 업로더 -->
     <section class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 space-y-4 shadow-lg">
       <div>
         <h2 class="text-sm font-black text-white flex items-center gap-2">
-          <span>📁</span> 대표님 직접 녹음 / 외부 고음질 성우 MP3 교체기
+          <span>📁</span> 4. 대표님 직접 녹음 / 외부 고음질 성우 MP3 교체기
         </h2>
         <p class="text-xs text-slate-400 mt-1">
-          스마트폰 녹음 파일(MP3/WAV/M4A)을 업로드하면 브라우저에 즉시 적용되며, 배포용 ZIP으로 내려받을 수 있습니다.
+          스마트폰 녹음 파일(MP3/WAV/M4A)을 올리면 기본 AI 음성을 대체하여 앱에 즉시 반영됩니다.
         </p>
       </div>
 
@@ -186,13 +333,12 @@
         </div>
       </div>
 
-      <!-- 액션 바 -->
       <div class="pt-2 flex flex-wrap gap-2 justify-between items-center border-t border-slate-800">
         <button onclick="resetAllCustomAudio()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-bold">
-          🔄 기본 AI 음원으로 전체 초기화
+          🔄 업로드 파일 전체 초기화
         </button>
-        <button onclick="downloadAudioZip()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5">
-          <span>📦</span> 배포용 음원 5종 일괄 ZIP 다운로드
+        <button onclick="downloadAudioZip()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg flex items-center gap-1.5">
+          <span>📦</span> 현재 음원 ZIP 일괄 다운로드
         </button>
       </div>
     </section>
@@ -203,7 +349,7 @@
     // -------------------------------------------------------------
     // 1. PIN 보안 인증
     // -------------------------------------------------------------
-    const MASTER_PIN = '119'; // 기본 핀 (추후 변경 가능)
+    const MASTER_PIN = '119';
     
     function verifyPin() {
       const input = document.getElementById('studio-pin-input').value.trim();
@@ -229,96 +375,212 @@
     }
 
     // -------------------------------------------------------------
-    // 2. 성우 관리 및 오디오 플레이어
+    // 2. Web Audio 엔진 & 전역 튜닝 상태
     // -------------------------------------------------------------
-    let currentSpeaker = 'hyemin';
-    let currentAudio = null;
-    let syncInterval = null;
+    let audioCtx = null;
+    let currentSource = null;
+    let audioBuffers = {};
 
-    const CLIP_DEFS = [
-      { key: 'intro', name: '도입 안내', text: '편안한 자세를 취하고, 호흡에 집중해 봅니다.', dur: '약 2.5초' },
-      { key: 'inhale', name: '들숨 (4초)', text: '숨을 깊게 들이마십니다.', dur: '약 2.0초' },
-      { key: 'hold', name: '멈춤 (4초)', text: '숨을 가만히 멈춥니다.', dur: '약 1.8초' },
-      { key: 'exhale', name: '날숨 (6초)', text: '숨을 천천히 내쉽니다.', dur: '약 2.0초' },
-      { key: 'complete', name: '완료 안내', text: '수고하셨습니다. 오늘의 1분 호흡이 완료되었습니다.', dur: '약 3.0초' },
-    ];
+    let tuningState = {
+      speaker: localStorage.getItem('dolboni_voice_speaker') || 'hyemin', // hyemin, minwoo_hyunsu, minwoo_injoon
+      speed: parseFloat(localStorage.getItem('dolboni_voice_rate') || '1.0'),
+      pitch: parseFloat(localStorage.getItem('dolboni_voice_detune') || '0'),
+      offsets: JSON.parse(localStorage.getItem('dolboni_voice_offsets') || '{"inhale":0.0,"hold":0.1,"exhale":0.0,"complete":0.5}'),
+    };
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtx();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
 
     function initStudio() {
-      renderClips();
+      initAudio();
+      // UI 복원
+      applyStateToUI();
       updateUploadStatusLabels();
     }
 
-    function selectSpeaker(speaker) {
-      currentSpeaker = speaker;
-      const btnH = document.getElementById('tab-btn-hyemin');
-      const btnM = document.getElementById('tab-btn-minwoo');
+    function applyStateToUI() {
+      // 1. 성우 선택 UI
+      setSpeakerMode(tuningState.speaker, false);
 
-      if (speaker === 'hyemin') {
-        btnH.className = 'px-4 py-2 rounded-xl text-xs font-black border border-rose-500 bg-rose-500/20 text-rose-300 shadow flex items-center gap-1.5';
-        btnM.className = 'px-4 py-2 rounded-xl text-xs font-black border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1.5';
-      } else {
-        btnM.className = 'px-4 py-2 rounded-xl text-xs font-black border border-cyan-500 bg-cyan-500/20 text-cyan-300 shadow flex items-center gap-1.5';
-        btnH.className = 'px-4 py-2 rounded-xl text-xs font-black border border-slate-700 bg-slate-800 text-slate-400 flex items-center gap-1.5';
-      }
-      renderClips();
-      updateUploadStatusLabels();
-    }
+      // 2. 속도 슬라이더
+      document.getElementById('slider-speed').value = tuningState.speed;
+      document.getElementById('label-speed-val').textContent = `${tuningState.speed.toFixed(2)}x`;
 
-    function getAudioSrc(action) {
-      const customKey = `dolboni_custom_voice_${currentSpeaker}_${action}`;
-      const customUrl = localStorage.getItem(customKey);
-      if (customUrl) return customUrl;
+      // 3. 피치 슬라이더
+      document.getElementById('slider-pitch').value = tuningState.pitch;
+      const semitones = (tuningState.pitch / 100).toFixed(1);
+      document.getElementById('label-pitch-val').textContent = `${semitones > 0 ? '+' : ''}${semitones} st (${tuningState.pitch} cents)`;
 
-      const prefix = currentSpeaker === 'minwoo' ? 'voice_male_' : 'voice_female_';
-      return `audio/${prefix}${action}.mp3`;
-    }
-
-    function renderClips() {
-      const container = document.getElementById('clips-container');
-      container.innerHTML = CLIP_DEFS.map(clip => {
-        const isCustom = !!localStorage.getItem(`dolboni_custom_voice_${currentSpeaker}_${clip.key}`);
-        return `
-          <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-3 flex items-center justify-between">
-            <div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-black text-white">${clip.name}</span>
-                <span class="text-[10px] text-slate-400">${clip.dur}</span>
-                ${isCustom ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/30 text-purple-300 font-bold">커스텀</span>' : ''}
-              </div>
-              <p class="text-[11px] text-slate-300 mt-1 italic font-serif">"${clip.text}"</p>
-            </div>
-            <button onclick="playClip('${clip.key}')" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs flex items-center gap-1 shrink-0 shadow">
-              <span>▶️</span> 재생
-            </button>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function playClip(action) {
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-      }
-      const src = getAudioSrc(action);
-      currentAudio = new Audio(src);
-      currentAudio.play().catch(e => console.warn('Audio play error:', e));
+      // 4. 싱크 오프셋
+      ['inhale', 'hold', 'exhale'].forEach(phase => {
+        const val = tuningState.offsets[phase] !== undefined ? tuningState.offsets[phase] : 0.0;
+        const slider = document.getElementById(`slider-offset-${phase}`);
+        const label = document.getElementById(`label-offset-${phase}`);
+        if (slider) slider.value = val;
+        if (label) label.textContent = `${parseFloat(val).toFixed(1)}초`;
+      });
     }
 
     // -------------------------------------------------------------
-    // 3. 4-4-6 싱크 시뮬레이터
+    // 3. 성우 음색 변경
+    // -------------------------------------------------------------
+    function setSpeakerMode(mode, doPreview = true) {
+      tuningState.speaker = mode;
+
+      const btnH = document.getElementById('btn-voice-hyemin');
+      const btnMA = document.getElementById('btn-voice-minwoo-a');
+      const btnMB = document.getElementById('btn-voice-minwoo-b');
+      const bH = document.getElementById('badge-hyemin');
+      const bMA = document.getElementById('badge-minwoo-a');
+      const bMB = document.getElementById('badge-minwoo-b');
+
+      [btnH, btnMA, btnMB].forEach(b => {
+        b.className = 'p-3 rounded-2xl border border-slate-700 bg-slate-800/80 text-left transition flex flex-col justify-between';
+      });
+      [bH, bMA, bMB].forEach(b => b.classList.add('hidden'));
+
+      if (mode === 'hyemin') {
+        btnH.className = 'p-3 rounded-2xl border-2 border-rose-500 bg-rose-500/20 text-left transition flex flex-col justify-between shadow-lg';
+        bH.classList.remove('hidden');
+      } else if (mode === 'minwoo_hyunsu') {
+        btnMA.className = 'p-3 rounded-2xl border-2 border-cyan-500 bg-cyan-500/20 text-left transition flex flex-col justify-between shadow-lg';
+        bMA.classList.remove('hidden');
+      } else if (mode === 'minwoo_injoon') {
+        btnMB.className = 'p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-500/20 text-left transition flex flex-col justify-between shadow-lg';
+        bMB.classList.remove('hidden');
+      }
+
+      updateUploadStatusLabels();
+      if (doPreview) previewTunedClip('intro');
+    }
+
+    // -------------------------------------------------------------
+    // 4. 피치 & 속도 실시간 제어
+    // -------------------------------------------------------------
+    function updateSpeedValue(val) {
+      tuningState.speed = parseFloat(val);
+      document.getElementById('label-speed-val').textContent = `${tuningState.speed.toFixed(2)}x`;
+      if (currentSource) {
+        try { currentSource.playbackRate.value = tuningState.speed; } catch (e) {}
+      }
+    }
+
+    function updatePitchValue(val) {
+      tuningState.pitch = parseFloat(val);
+      const semitones = (tuningState.pitch / 100).toFixed(1);
+      document.getElementById('label-pitch-val').textContent = `${semitones > 0 ? '+' : ''}${semitones} st (${tuningState.pitch} cents)`;
+      if (currentSource && currentSource.detune) {
+        try { currentSource.detune.value = tuningState.pitch; } catch (e) {}
+      }
+    }
+
+    function updateOffsetValue(phase, val) {
+      tuningState.offsets[phase] = parseFloat(val);
+      const label = document.getElementById(`label-offset-${phase}`);
+      if (label) label.textContent = `${parseFloat(val).toFixed(1)}초`;
+    }
+
+    function resetTuningValues() {
+      tuningState.speed = 1.0;
+      tuningState.pitch = 0;
+      tuningState.offsets = { inhale: 0.0, hold: 0.1, exhale: 0.0, complete: 0.5 };
+      applyStateToUI();
+      previewTunedClip('intro');
+    }
+
+    // -------------------------------------------------------------
+    // 5. 음원 로드 및 튜닝 사운드 재생
+    // -------------------------------------------------------------
+    function getClipUrl(action) {
+      // 1. 커스텀 업로드 파일 확인
+      const customKey = `dolboni_custom_voice_${tuningState.speaker}_${action}`;
+      const customData = localStorage.getItem(customKey);
+      if (customData) return customData;
+
+      // 2. 모델별 음원 파일 매핑
+      if (tuningState.speaker === 'hyemin') {
+        return `audio/voice_female_${action}.mp3`;
+      } else if (tuningState.speaker === 'minwoo_injoon') {
+        return `audio/voice_male_injoon_${action}.mp3`;
+      } else {
+        return `audio/voice_male_${action}.mp3`;
+      }
+    }
+
+    async function loadAudioBuffer(url) {
+      initAudio();
+      if (audioBuffers[url]) return audioBuffers[url];
+      try {
+        const resp = await fetch(url);
+        const arrayBuf = await resp.arrayBuffer();
+        const decoded = await audioCtx.decodeAudioData(arrayBuf);
+        audioBuffers[url] = decoded;
+        return decoded;
+      } catch (err) {
+        console.warn('Buffer load error:', url, err);
+        return null;
+      }
+    }
+
+    function stopCurrentAudio() {
+      if (currentSource) {
+        try {
+          currentSource.stop();
+          currentSource.disconnect();
+        } catch (e) {}
+        currentSource = null;
+      }
+    }
+
+    async function previewTunedClip(action, delaySec = 0) {
+      initAudio();
+      stopCurrentAudio();
+
+      const url = getClipUrl(action);
+      const buffer = await loadAudioBuffer(url);
+      if (!buffer) return;
+
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.playbackRate.value = tuningState.speed;
+      if (source.detune) {
+        source.detune.value = tuningState.pitch;
+      }
+
+      source.connect(audioCtx.destination);
+      source.onended = () => {
+        if (currentSource === source) currentSource = null;
+      };
+
+      const startTime = audioCtx.currentTime + delaySec;
+      source.start(startTime);
+      currentSource = source;
+    }
+
+    // -------------------------------------------------------------
+    // 6. 4-4-6 호흡 싱크 시뮬레이터 (피치·속도·싱크딜레이 100% 반영)
     // -------------------------------------------------------------
     let isSimulating = false;
+    let simInterval = null;
+    let simTimeout = null;
 
     function toggleSyncSimulator() {
       const btn = document.getElementById('btn-sync-test');
       const stage = document.getElementById('sync-stage');
+
       if (isSimulating) {
         stopSimulator();
       } else {
         isSimulating = true;
         btn.textContent = '⏹️ 시뮬레이터 중지';
-        btn.className = 'px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-md';
+        btn.className = 'px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-md';
         stage.classList.remove('hidden');
         runSimCycle();
       }
@@ -326,75 +588,95 @@
 
     function stopSimulator() {
       isSimulating = false;
-      clearInterval(syncInterval);
-      if (currentAudio) currentAudio.pause();
+      clearInterval(simInterval);
+      clearTimeout(simTimeout);
+      stopCurrentAudio();
       const btn = document.getElementById('btn-sync-test');
       const stage = document.getElementById('sync-stage');
-      btn.textContent = '▶️ 싱크 테스트 시작';
-      btn.className = 'px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md';
+      btn.textContent = '▶️ 싱크 시뮬레이터 실행';
+      btn.className = 'px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md';
       stage.classList.add('hidden');
     }
 
     function runSimCycle() {
       if (!isSimulating) return;
       const circle = document.getElementById('sim-circle');
+      const glow = document.getElementById('sim-glow');
       const phase = document.getElementById('sim-phase');
       const timer = document.getElementById('sim-timer');
       const desc = document.getElementById('sim-desc');
 
-      // Phase 1: 들숨 4초
+      // Phase 1: 들숨 (4초)
       phase.textContent = '들숨';
-      desc.textContent = '숨을 깊게 들이마십니다 (4초)';
+      desc.textContent = `숨을 깊게 들이마십니다 (4초) [딜레이: ${tuningState.offsets.inhale || 0}초]`;
       circle.style.transition = 'transform 4s cubic-bezier(0.4, 0, 0.2, 1)';
+      glow.style.transition = 'transform 4s ease-out';
       circle.style.transform = 'scale(1.35)';
-      playClip('inhale');
+      glow.style.transform = 'scale(1.3)';
+
+      // 설정된 들숨 딜레이 후 음성 재생
+      const inhaleDelay = tuningState.offsets.inhale || 0;
+      simTimeout = setTimeout(() => {
+        if (isSimulating) previewTunedClip('inhale');
+      }, inhaleDelay * 1000);
 
       let count = 4;
       timer.textContent = count;
-      syncInterval = setInterval(() => {
+      simInterval = setInterval(() => {
         if (!isSimulating) return;
         count--;
         if (count > 0) {
           timer.textContent = count;
         } else {
-          clearInterval(syncInterval);
-          // Phase 2: 멈춤 4초
+          clearInterval(simInterval);
+          // Phase 2: 멈춤 (4초)
           phase.textContent = '멈춤';
-          desc.textContent = '숨을 가만히 멈춥니다 (4초)';
+          desc.textContent = `숨을 가만히 멈춥니다 (4초) [딜레이: ${tuningState.offsets.hold || 0}초]`;
           circle.style.transition = 'transform 1s ease-in-out';
           circle.style.transform = 'scale(1.35)';
-          playClip('hold');
+          glow.style.transform = 'scale(1.2)';
+
+          const holdDelay = tuningState.offsets.hold || 0;
+          simTimeout = setTimeout(() => {
+            if (isSimulating) previewTunedClip('hold');
+          }, holdDelay * 1000);
 
           let hCount = 4;
           timer.textContent = hCount;
-          syncInterval = setInterval(() => {
+          simInterval = setInterval(() => {
             if (!isSimulating) return;
             hCount--;
             if (hCount > 0) {
               timer.textContent = hCount;
             } else {
-              clearInterval(syncInterval);
-              // Phase 3: 날숨 6초
+              clearInterval(simInterval);
+              // Phase 3: 날숨 (6초)
               phase.textContent = '날숨';
-              desc.textContent = '입으로 편안하게 내쉽니다 (6초)';
+              desc.textContent = `입으로 천천히 내쉽니다 (6초) [딜레이: ${tuningState.offsets.exhale || 0}초]`;
               circle.style.transition = 'transform 6s cubic-bezier(0.4, 0, 0.2, 1)';
+              glow.style.transition = 'transform 6s ease-out';
               circle.style.transform = 'scale(0.85)';
-              playClip('exhale');
+              glow.style.transform = 'scale(0.8)';
+
+              const exhaleDelay = tuningState.offsets.exhale || 0;
+              simTimeout = setTimeout(() => {
+                if (isSimulating) previewTunedClip('exhale');
+              }, exhaleDelay * 1000);
 
               let exCount = 6;
               timer.textContent = exCount;
-              syncInterval = setInterval(() => {
+              simInterval = setInterval(() => {
                 if (!isSimulating) return;
                 exCount--;
                 if (exCount > 0) {
                   timer.textContent = exCount;
                 } else {
-                  clearInterval(syncInterval);
-                  // 완료
+                  clearInterval(simInterval);
+                  // 1사이클 완료
                   phase.textContent = '완료';
-                  desc.textContent = '1사이클 완료!';
-                  playClip('complete');
-                  setTimeout(() => {
+                  desc.textContent = '1사이클 완료! 잠시 후 다음 사이클이 반복됩니다.';
+                  previewTunedClip('complete');
+                  simTimeout = setTimeout(() => {
                     if (isSimulating) runSimCycle();
                   }, 3000);
                 }
@@ -406,7 +688,20 @@
     }
 
     // -------------------------------------------------------------
-    // 4. 대표님 직접 녹음 파일 업로드 & 즉시 적용
+    // 7. 돌보니 본 앱에 튜닝 설정 즉시 영구 저장
+    // -------------------------------------------------------------
+    function applyTuningToDolboniApp() {
+      // AppState에 반영될 키들
+      localStorage.setItem('dolboni_voice_speaker', tuningState.speaker);
+      localStorage.setItem('dolboni_voice_rate', tuningState.speed.toString());
+      localStorage.setItem('dolboni_voice_detune', tuningState.pitch.toString());
+      localStorage.setItem('dolboni_voice_offsets', JSON.stringify(tuningState.offsets));
+
+      alert(`[튜닝 설정 저장 완료!]\n\n• 선택 성우: ${tuningState.speaker}\n• 속도: ${tuningState.speed.toFixed(2)}x\n• 피치: ${(tuningState.pitch / 100).toFixed(1)} st (${tuningState.pitch} cents)\n• 싱크 딜레이: 들숨(${tuningState.offsets.inhale}s), 멈춤(${tuningState.offsets.hold}s), 날숨(${tuningState.offsets.exhale}s)\n\n돌보니 본 앱을 실행하시면 이 설정이 그대로 실시간 적용됩니다.`);
+    }
+
+    // -------------------------------------------------------------
+    // 8. 대표님 실녹음 파일 업로드 및 관리
     // -------------------------------------------------------------
     function handleFileUpload(action, input) {
       const file = input.files[0];
@@ -415,24 +710,25 @@
       const reader = new FileReader();
       reader.onload = (e) => {
         const dataUrl = e.target.result;
-        const customKey = `dolboni_custom_voice_${currentSpeaker}_${action}`;
+        const customKey = `dolboni_custom_voice_${tuningState.speaker}_${action}`;
         localStorage.setItem(customKey, dataUrl);
+        // 캐시 버퍼 초기화
+        audioBuffers = {};
         updateUploadStatusLabels();
-        renderClips();
-        alert(`'${action}' 음원이 성공적으로 적용되었습니다! 돌보니 앱에서도 즉시 반영됩니다.`);
-        playClip(action);
+        alert(`'${action}' 음원이 성공적으로 적용되었습니다!`);
+        previewTunedClip(action);
       };
       reader.readAsDataURL(file);
     }
 
     function updateUploadStatusLabels() {
       ['inhale', 'hold', 'exhale', 'complete'].forEach(action => {
-        const customKey = `dolboni_custom_voice_${currentSpeaker}_${action}`;
+        const customKey = `dolboni_custom_voice_${tuningState.speaker}_${action}`;
         const hasCustom = !!localStorage.getItem(customKey);
         const el = document.getElementById(`status-${action}`);
         if (el) {
           if (hasCustom) {
-            el.innerHTML = '<span class="text-emerald-400 font-bold">✨ 커스텀 음원 적용됨 (클릭 시 재생)</span>';
+            el.innerHTML = '<span class="text-emerald-400 font-bold">✨ 커스텀 실녹음 파일 적용됨</span>';
           } else {
             el.textContent = '기본 AI 음원 사용 중';
           }
@@ -444,33 +740,33 @@
       if (!confirm('업로드된 커스텀 음원을 모두 지우고 기본 AI 음원으로 복원하시겠습니까?')) return;
       ['intro', 'inhale', 'hold', 'exhale', 'complete'].forEach(action => {
         localStorage.removeItem(`dolboni_custom_voice_hyemin_${action}`);
+        localStorage.removeItem(`dolboni_custom_voice_minwoo_hyunsu_${action}`);
+        localStorage.removeItem(`dolboni_custom_voice_minwoo_injoon_${action}`);
         localStorage.removeItem(`dolboni_custom_voice_minwoo_${action}`);
       });
+      audioBuffers = {};
       updateUploadStatusLabels();
-      renderClips();
       alert('기본 AI 음원으로 모두 복원되었습니다.');
     }
 
     async function downloadAudioZip() {
       const zip = new JSZip();
-      const folder = zip.folder(`dolboni_audio_${currentSpeaker}`);
-      
+      const folder = zip.folder(`dolboni_audio_${tuningState.speaker}`);
       const files = ['intro', 'inhale', 'hold', 'exhale', 'complete'];
       for (const f of files) {
-        const url = getAudioSrc(f);
+        const url = getClipUrl(f);
         try {
           const resp = await fetch(url);
           const blob = await resp.blob();
           folder.file(`voice_${f}.mp3`, blob);
         } catch (e) {
-          console.warn('Failed to add file to zip:', f, e);
+          console.warn('Zip error:', f, e);
         }
       }
-
       const content = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(content);
-      a.download = `dolboni_${currentSpeaker}_voices.zip`;
+      a.download = `dolboni_${tuningState.speaker}_voices.zip`;
       a.click();
     }
   </script>

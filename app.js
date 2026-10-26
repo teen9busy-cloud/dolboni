@@ -224,9 +224,14 @@ function resolveVoiceFile(actionOrFile) {
   const customDataUrl = localStorage.getItem(customKey);
   if (customDataUrl) return customDataUrl;
 
-  // 2. 기본 AI 음원 매핑 (혜민 실장: voice_female_*, 민우 실장: voice_male_*)
-  const prefix = AppState.voiceSpeaker === 'minwoo' ? 'voice_male_' : 'voice_female_';
-  return `audio/${prefix}${action}.mp3`;
+  // 2. 기본 AI 음원 매핑 (혜민 실장: voice_female_*, 민우 인준: voice_male_injoon_*, 민우 현수: voice_male_*)
+  if (AppState.voiceSpeaker === 'hyemin') {
+    return `audio/voice_female_${action}.mp3`;
+  } else if (AppState.voiceSpeaker === 'minwoo_injoon') {
+    return `audio/voice_male_injoon_${action}.mp3`;
+  } else {
+    return `audio/voice_male_${action}.mp3`;
+  }
 }
 
 async function playVoice(actionOrFile) {
@@ -244,6 +249,15 @@ async function playVoice(actionOrFile) {
 
   const source = AppState.audioCtx.createBufferSource();
   source.buffer = buffer;
+
+  // studio.html에서 튜닝한 속도(Rate) 및 피치(Detune Cents) 실시간 반영
+  const speed = parseFloat(localStorage.getItem('dolboni_voice_rate') || '1.0');
+  const pitch = parseFloat(localStorage.getItem('dolboni_voice_detune') || '0');
+  source.playbackRate.value = speed;
+  if (source.detune) {
+    source.detune.value = pitch;
+  }
+
   source.connect(AppState.voiceGain);
   source.onended = () => {
     if (AppState.voiceSource === source) AppState.voiceSource = null;
@@ -429,7 +443,12 @@ function runBreathingCycle() {
   circle.style.transform = 'scale(1.35)';
   glow.style.transform = 'scale(1.3)';
 
-  playVoice('voice_inhale.mp3');
+  const offsets = JSON.parse(localStorage.getItem('dolboni_voice_offsets') || '{"inhale":0,"hold":0.1,"exhale":0,"complete":0.5}');
+  if (offsets.inhale && offsets.inhale > 0) {
+    setTimeout(() => { if (AppState.isBreathing) playVoice('inhale'); }, offsets.inhale * 1000);
+  } else {
+    playVoice('inhale');
+  }
   triggerVibration('inhale');
 
   let count = 4;
@@ -450,7 +469,11 @@ function runBreathingCycle() {
       circle.style.transform = 'scale(1.35)';
       glow.style.transform = 'scale(1.2)';
 
-      playVoice('voice_hold.mp3');
+      if (offsets.hold && offsets.hold > 0) {
+        setTimeout(() => { if (AppState.isBreathing) playVoice('hold'); }, offsets.hold * 1000);
+      } else {
+        playVoice('hold');
+      }
       triggerVibration('hold');
 
       let holdCount = 4;
@@ -472,7 +495,11 @@ function runBreathingCycle() {
           circle.style.transform = 'scale(0.85)';
           glow.style.transform = 'scale(0.8)';
 
-          playVoice('voice_exhale.mp3');
+          if (offsets.exhale && offsets.exhale > 0) {
+            setTimeout(() => { if (AppState.isBreathing) playVoice('exhale'); }, offsets.exhale * 1000);
+          } else {
+            playVoice('exhale');
+          }
           triggerVibration('exhale');
 
           let exhaleCount = 6;
