@@ -3,8 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>돌보니 (Dolboni) - 소방 마음건강 마일리지</title>
+  <title>돌보니 (Dolboni) - 소방 마음건강 마일리지 & 모바일 쉼터</title>
+  
+  <!-- PWA 필수 메타 및 아이콘 설정 -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="돌보니">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+
+  <!-- Tailwind CSS & Supabase JS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     /* 모바일 전체화면 원스크린 레이아웃 (스크롤 없이 한 화면에 쏙 들어가도록 설계) */
     html, body {
@@ -17,8 +30,8 @@
       user-select: none;
     }
     body {
-      padding-top: max(env(safe-area-inset-top), 8px);
-      padding-bottom: max(env(safe-area-inset-bottom), 12px);
+      padding-top: max(env(safe-area-inset-top), 6px);
+      padding-bottom: max(env(safe-area-inset-bottom), 10px);
     }
     /* 버튼 크기 변형 완전 방지 */
     button, .btn, .bgm-btn {
@@ -37,27 +50,33 @@
 <body class="bg-slate-950 text-slate-100 flex flex-col justify-between font-sans antialiased">
 
   <!-- ==================== 1. 상단 콤팩트 헤더 (고정) ==================== -->
-  <header class="px-4 py-2 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md flex-shrink-0 z-40">
-    <div class="flex items-center gap-2.5">
+  <header class="px-3.5 py-2 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md flex-shrink-0 z-40">
+    <div class="flex items-center gap-2">
       <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-md text-white font-black text-sm">
         돌
       </div>
       <div>
-        <h1 class="text-sm font-extrabold tracking-tight text-white flex items-center gap-1">
-          돌보니
-          <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-400">1.0</span>
-        </h1>
-        <p id="user-affiliation-label" class="text-[10px] text-slate-400">진주소방서 상대센터 1팀</p>
+        <div class="flex items-center gap-1.5">
+          <h1 class="text-sm font-extrabold tracking-tight text-white">돌보니</h1>
+          <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-400">PWA</span>
+          <button id="btn-header-install" onclick="openA2hsGuide()" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30 flex items-center gap-0.5">
+            <span>📲</span> 앱 설치
+          </button>
+        </div>
+        <p id="user-affiliation-label" onclick="openAuthModal()" class="text-[10px] text-slate-400 hover:text-blue-300 cursor-pointer flex items-center gap-1">
+          <span id="user-affiliation-text">소방관 인증 대기 (클릭)</span>
+          <span class="text-[9px] text-blue-400">✏️</span>
+        </p>
       </div>
     </div>
 
     <!-- 마음건강 마일리지 배지 -->
     <div id="dolboni-header-points-badge" class="cursor-pointer" onclick="openPointsHistoryModal()">
-      <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/15 border border-amber-500/40 rounded-full text-amber-400 font-extrabold text-xs shadow-sm">
+      <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500/15 border border-amber-500/40 rounded-full text-amber-400 font-extrabold text-xs shadow-sm">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
         </svg>
-        <span id="header-points-value">350 P</span>
+        <span id="header-points-value">0 P</span>
       </div>
     </div>
   </header>
@@ -104,14 +123,14 @@
         </div>
       </div>
 
-      <!-- 중앙 4-7-8 호흡 가이드 원 (화면에 맞게 자동 유연 축소/확대) -->
+      <!-- 중앙 4-4-6 호흡 가이드 원 (화면에 맞게 자동 유연 축소/확대) -->
       <div class="flex-1 flex flex-col items-center justify-center py-1 text-center relative">
         <div class="mb-1">
           <h2 id="breathe-instruction" class="text-lg font-black text-white">
             호흡 준비
           </h2>
           <p id="breathe-subtext" class="text-[11px] text-slate-400">
-            4초 들숨 · 7초 멈춤 · 8초 날숨
+            4초 들숨 · 4초 멈춤 · 6초 날숨 (총 14초 공명 이완)
           </p>
         </div>
 
@@ -121,7 +140,7 @@
           <div class="absolute inset-1.5 rounded-full border-2 border-dashed border-slate-700/60"></div>
           <div id="breathe-circle" class="w-32 h-32 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex flex-col items-center justify-center shadow-xl text-white transform transition-transform duration-700 scale-90">
             <span id="breathe-phase-text" class="text-base font-black">시작</span>
-            <span id="breathe-timer" class="text-3xl font-black mt-0.5">4-7-8</span>
+            <span id="breathe-timer" class="text-3xl font-black mt-0.5">4-4-6</span>
           </div>
         </div>
 
@@ -158,83 +177,97 @@
         <h3 class="text-xs font-extrabold text-white mb-2 flex items-center gap-1.5">
           <span>📊</span> 나의 이번 달 회복 활동
         </h3>
-        <div class="grid grid-cols-2 gap-2 text-center">
-          <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/50">
-            <p class="text-[11px] text-slate-400">총 수행 횟수</p>
-            <p class="text-xl font-black text-blue-400 mt-0.5">14회</p>
+        <div class="grid grid-cols-3 gap-2 text-center py-2">
+          <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+            <p class="text-[10px] text-slate-400">누적 세션</p>
+            <p id="stat-total-sessions" class="text-base font-black text-blue-400 mt-0.5">0회</p>
           </div>
-          <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/50">
-            <p class="text-[11px] text-slate-400">누적 긴장 완화</p>
-            <p class="text-xl font-black text-emerald-400 mt-0.5">-3.4점</p>
+          <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+            <p class="text-[10px] text-slate-400">누적 힐링</p>
+            <p id="stat-total-minutes" class="text-base font-black text-cyan-400 mt-0.5">0분</p>
+          </div>
+          <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+            <p class="text-[10px] text-slate-400">평균 완화폭</p>
+            <p id="stat-avg-drop" class="text-base font-black text-emerald-400 mt-0.5">-2.4점</p>
           </div>
         </div>
       </div>
+
+      <!-- 함께 돌보기 팀 현황 카드 -->
       <div id="dolboni-team-status-card-container"></div>
     </section>
 
-    <!-- TAB 3: 찾아가는 상담실 신청 -->
+    <!-- TAB 3: 비공개 심리지원 상담 신청 -->
     <section id="tab-counsel" class="hidden space-y-3">
-      <div class="bg-gradient-to-br from-indigo-950/60 to-slate-900 border border-indigo-500/30 rounded-2xl p-4 shadow-lg">
-        <div class="flex items-center gap-1.5 mb-1">
-          <span class="p-1 rounded-lg bg-indigo-500/20 text-indigo-400">🤝</span>
-          <h3 class="text-sm font-extrabold text-white">찾아가는 상담실 비공개 신청</h3>
-        </div>
-        <p class="text-[11px] text-slate-300">
-          비밀은 100% 보장되며, 전담 상담사가 조용히 연락드립니다.
-        </p>
-        <form id="form-counsel-request" onsubmit="submitCounselRequest(event)" class="mt-3 space-y-2 text-xs">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-lg">🌿</span>
           <div>
-            <label class="block font-bold text-slate-400 mb-0.5">연락처</label>
-            <input type="tel" id="counsel-phone" placeholder="010-0000-0000" required class="w-full h-10 px-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none focus:border-indigo-500">
+            <h3 class="text-sm font-black text-white">찾아가는 상담실 비공개 방문신청</h3>
+            <p class="text-[11px] text-slate-400">상담 내용은 법적으로 절대 비밀이 보장됩니다</p>
+          </div>
+        </div>
+
+        <form id="form-counsel-request" onsubmit="submitCounselRequest(event)" class="space-y-3 text-xs mt-3">
+          <div>
+            <label class="block text-slate-300 font-bold mb-1">연락처 (휴대전화)</label>
+            <input type="tel" id="counsel-phone" required placeholder="010-0000-0000" class="w-full h-11 px-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none focus:border-indigo-500">
           </div>
           <div>
-            <label class="block font-bold text-slate-400 mb-0.5">희망 시간대</label>
-            <select id="counsel-time" class="w-full h-10 px-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none">
-              <option value="주간근무 중 편한 시간">주간근무 중 편한 시간</option>
-              <option value="비번/휴무일 대면">비번/휴무일 대면 상담</option>
-              <option value="야간 대기 중 유선">야간 대기 중 유선/전화 상담</option>
+            <label class="block text-slate-300 font-bold mb-1">희망 상담 시간대</label>
+            <select id="counsel-time" class="w-full h-11 px-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none">
+              <option value="주간 근무 중 (센터 방문)">주간 근무 중 (센터 조용한 방 방문)</option>
+              <option value="야간 대기 시간 (센터 방문)">야간 대기 시간 (센터 방문)</option>
+              <option value="비번 날 (외부 카페/상담실)">비번 날 (관서 외 조용한 상담소)</option>
+              <option value="전화 비대면 상담 희망">전화 비대면 상담 희망</option>
             </select>
           </div>
           <div>
-            <label class="block font-bold text-slate-400 mb-0.5">남기실 말씀 (선택)</label>
+            <label class="block text-slate-300 font-bold mb-1">상담사에게 전하고 싶은 말씀 (선택)</label>
             <textarea id="counsel-note" rows="2" placeholder="출동 충격 완화, 수면 문제 등 간단히 적어주세요" class="w-full p-2.5 rounded-xl bg-slate-800/90 border border-slate-700 text-white focus:outline-none"></textarea>
           </div>
-          <button type="submit" class="w-full h-11 rounded-xl bg-indigo-600 text-white font-extrabold text-xs shadow-md">
+          <button type="submit" class="w-full h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md">
             비공개 상담 신청 접수하기
           </button>
         </form>
       </div>
     </section>
 
-    <!-- TAB 4: 내 정보 / 공무직 인증 -->
+    <!-- TAB 4: 내 정보 / 소속 관리 -->
     <section id="tab-profile" class="hidden space-y-3">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <h3 class="text-xs font-extrabold text-white mb-2">소속 및 계정 관리</h3>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-extrabold text-white">소속 및 계정 관리</h3>
+          <button onclick="openAuthModal()" class="text-[11px] text-blue-400 font-bold hover:underline">소속 변경 / 인증</button>
+        </div>
         <div class="space-y-2 text-xs">
           <div class="flex justify-between items-center py-1.5 border-b border-slate-800">
+            <span class="text-slate-400">대원 이름</span>
+            <span id="profile-name" class="font-bold text-white">게스트</span>
+          </div>
+          <div class="flex justify-between items-center py-1.5 border-b border-slate-800">
             <span class="text-slate-400">회원 유형</span>
-            <span id="profile-member-type" class="font-bold text-blue-400">현장 소방공무원</span>
+            <span id="profile-member-type" class="font-bold text-blue-400">소방공무원 (인증 대기)</span>
           </div>
           <div class="flex justify-between items-center py-1.5 border-b border-slate-800">
             <span class="text-slate-400">소속 관서</span>
-            <span id="profile-station" class="font-bold text-white">진주소방서</span>
+            <span id="profile-station" class="font-bold text-white">미지정</span>
           </div>
           <div class="flex justify-between items-center py-1.5 border-b border-slate-800">
             <span class="text-slate-400">센터 / 팀</span>
-            <span id="profile-center-team" class="font-bold text-white">상대119안전센터 1팀</span>
+            <span id="profile-center-team" class="font-bold text-white">미지정</span>
           </div>
         </div>
 
-        <div class="mt-4 p-3 rounded-xl bg-slate-800/60 border border-slate-700/60">
-          <h4 class="font-bold text-[11px] text-amber-300">
-            🏷️ 공무직 / 기간제 관서 인증 코드
-          </h4>
-          <div class="mt-2 flex gap-2">
-            <input type="text" id="invite-code-input" placeholder="코드 6자리" maxlength="6" class="flex-1 h-10 px-3 rounded-lg bg-slate-900 border border-slate-700 text-white uppercase text-center font-mono">
-            <button type="button" onclick="verifyCivilianInviteCode()" class="w-16 h-10 rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
-              인증
-            </button>
+        <!-- A2HS 설치 버튼 (프로필 내 제공) -->
+        <div class="mt-4 p-3 rounded-xl bg-indigo-950/40 border border-indigo-700/50 flex items-center justify-between">
+          <div>
+            <h4 class="font-bold text-xs text-indigo-200">📲 스마트폰 바탕화면에 설치</h4>
+            <p class="text-[10px] text-slate-400">앱스토어 없이 홈 화면 아이콘으로 즉시 실행</p>
           </div>
+          <button type="button" onclick="openA2hsGuide()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow">
+            설치 안내
+          </button>
         </div>
       </div>
     </section>
@@ -246,7 +279,7 @@
     <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5 w-full max-w-sm shadow-2xl">
       <div class="text-center mb-3">
         <span class="text-2xl">✨</span>
-        <h3 class="text-base font-black text-white mt-1">호흡 세션을 마쳤습니다!</h3>
+        <h3 class="text-base font-black text-white mt-1">4-4-6 호흡을 마쳤습니다!</h3>
         <p class="text-xs text-slate-400">지금 느껴지는 긴장도를 체크해 주세요</p>
       </div>
 
@@ -259,8 +292,136 @@
       </div>
 
       <button type="button" onclick="confirmPostCheckinAndSave()" class="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-sm shadow-md">
-        완료하고 +50P 마일리지 받기
+        완료하고 마일리지 적립하기
       </button>
+    </div>
+  </div>
+
+  <!-- ==================== 소방관 인증 / 소속 등록 모달 ==================== -->
+  <div id="modal-auth-profile" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center p-3 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5 w-full max-w-sm shadow-2xl text-white space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🚒</span>
+          <div>
+            <h3 class="font-black text-sm">소방관 인증 & 마일리지 연동</h3>
+            <p class="text-[10px] text-slate-400">시모니 1.0 플랫폼과 실시간 연계됩니다</p>
+          </div>
+        </div>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white p-1">✕</button>
+      </div>
+
+      <form id="form-user-auth" onsubmit="handleUserAuthSubmit(event)" class="space-y-2.5 text-xs">
+        <div>
+          <label class="block text-slate-300 font-bold mb-1">성명</label>
+          <input type="text" id="auth-name" required placeholder="예: 김소방" class="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-slate-300 font-bold mb-1">휴대전화 번호</label>
+          <input type="tel" id="auth-phone" required placeholder="010-1234-5678" class="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-300 font-bold mb-1">소방본부</label>
+            <select id="auth-headquarters" onchange="updateStationOptions()" class="w-full h-10 px-2 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none text-xs">
+              <option value="경남소방본부">경남소방본부</option>
+              <option value="창원소방본부">창원소방본부</option>
+              <option value="중앙119구조본부">중앙119구조본부</option>
+              <option value="기타">기타 관서</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-300 font-bold mb-1">소속 소방서</label>
+            <input type="text" id="auth-station" required placeholder="예: 진주소방서" class="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none text-xs">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-300 font-bold mb-1">센터 / 구조대</label>
+            <input type="text" id="auth-center" required placeholder="예: 상대119안전센터" class="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none text-xs">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-bold mb-1">근무 팀</label>
+            <select id="auth-team" class="w-full h-10 px-2 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none text-xs">
+              <option value="1팀">1팀</option>
+              <option value="2팀">2팀</option>
+              <option value="3팀">3팀</option>
+              <option value="주간근무">주간근무</option>
+              <option value="상근">상근</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-300 font-bold mb-1">회원 유형</label>
+          <div class="flex gap-2 text-xs">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="auth-member-type" value="firefighter" checked class="accent-blue-500">
+              <span>현장 소방공무원</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="auth-member-type" value="civilian" class="accent-blue-500">
+              <span>공무직 / 소방 가족</span>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full h-11 mt-1 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs shadow-md">
+          인증 및 마일리지 연동하기
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== A2HS 안드로이드 플로팅 설치 바 ==================== -->
+  <div id="android-install-banner" class="fixed bottom-16 left-3 right-3 z-50 p-3 rounded-2xl bg-gradient-to-r from-blue-950 to-indigo-950 border border-blue-500/60 shadow-2xl backdrop-blur-md flex items-center justify-between text-white hidden">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white text-base font-black">
+        돌
+      </div>
+      <div>
+        <p class="text-xs font-black">홈 화면에 돌보니 앱 추가</p>
+        <p class="text-[10px] text-blue-200">주소창 없이 네이티브 앱처럼 실행</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <button onclick="triggerAndroidInstall()" class="px-3.5 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs shadow">
+        설치
+      </button>
+      <button onclick="dismissInstallBanner()" class="p-1.5 text-slate-400 hover:text-white">✕</button>
+    </div>
+  </div>
+
+  <!-- ==================== A2HS iOS 사파리 가이드 바텀시트 ==================== -->
+  <div id="ios-install-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end justify-center p-3 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5 w-full max-w-sm shadow-2xl text-white space-y-3">
+      <div class="flex items-start justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📲</span>
+          <div>
+            <h3 class="font-black text-sm">아이폰 바탕화면에 돌보니 추가</h3>
+            <p class="text-[11px] text-slate-400">사파리에서 홈 화면에 추가하면 전체화면 앱으로 열립니다</p>
+          </div>
+        </div>
+        <button onclick="closeIosInstallModal()" class="text-slate-400 hover:text-white p-1">✕</button>
+      </div>
+      <div class="bg-slate-800/80 rounded-2xl p-3.5 space-y-2.5 text-xs text-slate-200 border border-slate-700/60">
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">1</span>
+          <span>하단 중앙의 <strong>[공유 버튼 ⎋]</strong>을 누릅니다.</span>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">2</span>
+          <span>메뉴를 올려 <strong>[홈 화면에 추가 ⊞]</strong>를 누릅니다.</span>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">3</span>
+          <span>우측 상단의 <strong>[추가]</strong>를 누르면 바탕화면에 설치 완료!</span>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="dismissIosInstallModal24h()" class="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-400 font-bold text-xs">오늘 하루 보지 않기</button>
+        <button onclick="closeIosInstallModal()" class="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-black text-xs">확인했습니다</button>
+      </div>
     </div>
   </div>
 
@@ -301,9 +462,9 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then((reg) => {
-          console.log('[Dolboni] ServiceWorker registered with scope:', reg.scope);
+          console.log('[Dolboni PWA] ServiceWorker registered:', reg.scope);
         }).catch((err) => {
-          console.warn('[Dolboni] ServiceWorker registration failed:', err);
+          console.warn('[Dolboni PWA] ServiceWorker failed:', err);
         });
       });
     }
