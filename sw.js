@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v6.0-pwa';
+const CACHE_NAME = 'dolboni-v7.0-clean';
 const PRECACHE_URLS = [
   './',
   './index.html',

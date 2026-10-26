@@ -274,6 +274,53 @@
 
   </main>
 
+  <!-- ==================== 웰컴 온보딩 게이트 모달 (최초 접속 1회 선택) ==================== -->
+  <div id="modal-welcome-gate" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-sm shadow-2xl text-white space-y-4 text-center">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg text-2xl">
+        🌿
+      </div>
+      <div>
+        <h2 class="text-lg font-black text-white">돌보니에 오신 것을 환영합니다</h2>
+        <p class="text-xs text-slate-400 mt-1">소방 마음건강 마일리지 & 모바일 1분 쉼터</p>
+      </div>
+
+      <div class="space-y-2.5 pt-1">
+        <!-- 선택 1: 소방관 인증하고 시작하기 -->
+        <button type="button" onclick="chooseVerifiedOnboarding()" class="w-full p-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-left border border-blue-400/40 shadow-lg">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🚒</span>
+              <div>
+                <h4 class="font-black text-sm text-white">소방관 인증 / 시모니 연동</h4>
+                <p class="text-[11px] text-blue-200 mt-0.5">관서 마일리지 적립 · 심리상담 연계</p>
+              </div>
+            </div>
+            <span class="text-blue-300 text-sm font-bold">➜</span>
+          </div>
+        </button>
+
+        <!-- 선택 2: 비회원(게스트)으로 바로 체험하기 -->
+        <button type="button" onclick="chooseGuestOnboarding()" class="w-full p-3.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-left border border-slate-700 text-slate-300 shadow">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">☕</span>
+              <div>
+                <h4 class="font-bold text-xs text-white">비회원으로 바로 체험하기</h4>
+                <p class="text-[10px] text-slate-400 mt-0.5">가입 없이 4-4-6 호흡과 자연음원 즉시 이용</p>
+              </div>
+            </div>
+            <span class="text-slate-400 text-xs">선택</span>
+          </div>
+        </button>
+      </div>
+
+      <p class="text-[10px] text-slate-500 leading-relaxed">
+        * 선택하신 로그인 자격은 기기에 안전하게 영구 기억되며,<br>다음 접속 시 번거로운 과정 없이 바로 열립니다.
+      </p>
+    </div>
+  </div>
+
   <!-- ==================== 사후 체크인 팝업 모달 ==================== -->
   <div id="modal-post-checkin" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5 w-full max-w-sm shadow-2xl">
@@ -398,13 +445,13 @@
         <div class="flex items-center gap-2">
           <span class="text-2xl">📲</span>
           <div>
-            <h3 class="font-black text-sm">아이폰 바탕화면에 돌보니 추가</h3>
-            <p class="text-[11px] text-slate-400">사파리에서 홈 화면에 추가하면 전체화면 앱으로 열립니다</p>
+            <h3 id="ios-guide-title" class="font-black text-sm">아이폰 바탕화면에 돌보니 추가</h3>
+            <p id="ios-guide-sub" class="text-[11px] text-slate-400">사파리에서 홈 화면에 추가하면 전체화면 앱으로 열립니다</p>
           </div>
         </div>
         <button onclick="closeIosInstallModal()" class="text-slate-400 hover:text-white p-1">✕</button>
       </div>
-      <div class="bg-slate-800/80 rounded-2xl p-3.5 space-y-2.5 text-xs text-slate-200 border border-slate-700/60">
+      <div id="ios-guide-body" class="bg-slate-800/80 rounded-2xl p-3.5 space-y-2.5 text-xs text-slate-200 border border-slate-700/60">
         <div class="flex items-center gap-2.5">
           <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">1</span>
           <span>하단 중앙의 <strong>[공유 버튼 ⎋]</strong>을 누릅니다.</span>
