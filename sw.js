@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v8.0-network-first';
+const CACHE_NAME = 'dolboni-v8.1-clean-stats';
 const PRECACHE_URLS = [
   './',
   './index.html',

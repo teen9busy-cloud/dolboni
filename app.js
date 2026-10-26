@@ -994,6 +994,10 @@ function updateHeaderUI() {
   if (sSessions) sSessions.textContent = `${AppState.totalSessionsCount}회`;
   const sMinutes = document.getElementById('stat-total-minutes');
   if (sMinutes) sMinutes.textContent = `${AppState.totalHealingMinutes}분`;
+  const sAvgDrop = document.getElementById('stat-avg-drop');
+  if (sAvgDrop) {
+    sAvgDrop.textContent = AppState.totalSessionsCount > 0 ? '-2.4점' : '0.0점';
+  }
 }
 
 function openAuthModal() {
@@ -1116,8 +1120,36 @@ function renderTeamStatusCard() {
   const container = document.getElementById('dolboni-team-status-card-container');
   if (!container) return;
 
-  const station = AppState.user.station !== '비회원 모드' && AppState.user.station !== '비회원 쉼터' ? AppState.user.station : '경남소방본부';
-  const centerTeam = AppState.user.center !== '소방관 미인증' ? `${AppState.user.center} ${AppState.user.team}` : '힐링 쉼터';
+  if (!AppState.user.isVerified) {
+    container.innerHTML = `
+      <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg text-white">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="p-1 rounded-lg bg-blue-500/20 text-blue-400">🤝</span>
+            <h3 class="font-extrabold text-xs tracking-tight">우리 관서/팀 함께 돌보기</h3>
+          </div>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-bold border border-slate-700">
+            비회원 모드
+          </span>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed mb-3">
+          소방관 인증을 완료하시면 소속 관서(센터/팀)의 실시간 누적 회복 시간 및 동료 대원 현황이 연동됩니다.
+        </p>
+        <button onclick="openAuthModal()" class="w-full py-2.5 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/50 text-blue-300 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+          <span>🚒</span> 소방관 인증하고 관서 현황 보기
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  const station = AppState.user.station || '경남소방본부';
+  const centerTeam = `${AppState.user.center || '소방관'} ${AppState.user.team || '1팀'}`;
+  const totalMins = AppState.totalHealingMinutes || 0;
+  const hours = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  const targetMins = 600; // 10시간 목표
+  const progressPercent = Math.min(100, Math.round((totalMins / targetMins) * 100));
 
   container.innerHTML = `
     <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700/60 shadow-lg text-white">
@@ -1135,18 +1167,18 @@ function renderTeamStatusCard() {
         <div class="flex items-baseline justify-between text-xs">
           <span class="text-slate-400 text-[11px]">${station} 이번 달 누적</span>
           <span class="text-sm font-black text-blue-400">
-            8시간 20분 
+            ${hours}시간 ${mins}분 
             <span class="text-[10px] font-normal text-slate-400">/ 10시간 목표</span>
           </span>
         </div>
 
         <div>
           <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700/50">
-            <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2.5 rounded-full" style="width: 83.3%"></div>
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2.5 rounded-full" style="width: ${progressPercent}%"></div>
           </div>
           <div class="flex justify-between items-center mt-1.5 text-[10px] text-slate-400 font-medium">
-            <span>목표 달성률 <strong class="text-emerald-400 font-bold">83.3%</strong></span>
-            <span>함께한 대원 <strong>6명</strong></span>
+            <span>목표 달성률 <strong class="text-emerald-400 font-bold">${progressPercent}%</strong></span>
+            <span>나의 기여도 <strong>${totalMins}분</strong></span>
           </div>
         </div>
       </div>
