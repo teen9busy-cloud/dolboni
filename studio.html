@@ -392,7 +392,7 @@
     let audioBuffers = {};
 
     let tuningState = {
-      speaker: localStorage.getItem('dolboni_voice_speaker') || 'female',
+      speaker: localStorage.getItem('dolboni_voice_speaker') || 'male_a',
       speed: parseFloat(localStorage.getItem('dolboni_voice_rate') || '0.90'),
       pitch: parseFloat(localStorage.getItem('dolboni_voice_detune') || '50'),
       offsets: JSON.parse(localStorage.getItem('dolboni_voice_offsets') || '{"inhale":0.0,"hold":0.1,"exhale":0.0,"complete":0.5}'),

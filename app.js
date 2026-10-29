@@ -49,7 +49,7 @@ const AppState = {
   sessionStartTime: null,
   lastSessionDuration: 0,
   voiceEnabled: true,
-  voiceSpeaker: (localStorage.getItem('dolboni_voice_speaker') === 'male' || localStorage.getItem('dolboni_voice_speaker') === 'minwoo') ? 'male' : 'female', // 'female' (기본 여성) or 'male' (남성)
+  voiceSpeaker: (localStorage.getItem('dolboni_voice_speaker') === 'female' || localStorage.getItem('dolboni_voice_speaker') === 'hyemin') ? 'female' : 'male', // 'male' (기본 남성 성우) or 'female' (여성)
   currentBgm: 'music',
   hapticsEnabled: true,
   audioCtx: null,

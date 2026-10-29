@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v8.7-oneclick-remote-deploy';
+const CACHE_NAME = 'dolboni-v8.8-default-male-voice';
 const PRECACHE_URLS = [
   './',
   './index.html',
