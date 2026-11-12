@@ -1254,3 +1254,212 @@ function submitCounselRequest(e) {
   e.target.reset();
   switchTab('shelter');
 }
+
+// ------------------------------------------------------------------------------
+// 11. EMDR 안구운동 안정화 케어 (양측성 자극 BLS)
+// ------------------------------------------------------------------------------
+const EMDR_SPEED_MS = {
+  slow: 1800,   // 편도 1.8초
+  normal: 1150, // 편도 1.15초 (표준)
+  fast: 750     // 편도 0.75초
+};
+
+const EMDR_AFFIRMATIONS = [
+  '휴대폰을 가로로 눕혀 시선으로 흰 점을 따라가세요',
+  '지금 이 순간, 당신은 안전한 곳에 있습니다',
+  '고개는 고정하고 눈동자만 좌우로 편안히 움직입니다',
+  '현장의 긴장이 호흡과 함께 서서히 빠져나갑니다',
+  '그 현장은 이미 안전하게 끝났습니다',
+  '오늘도 동료와 시민을 위해 최선을 다했습니다',
+  '당신의 몸과 마음은 지금 충분히 쉬어도 됩니다'
+];
+
+const EmdrState = {
+  active: false,
+  rafId: null,
+  timerId: null,
+  startTime: 0,
+  speed: 'normal',
+  soundEnabled: true,
+  phase: 0,
+  lastTimestamp: 0,
+  lastDirection: 1,
+  affirmationIdx: 0
+};
+
+function startEmdrSession() {
+  if (AppState.isBreathing) {
+    stopBreathingSession();
+  }
+  initAudioEngine();
+
+  const overlay = document.getElementById('emdr-overlay');
+  if (!overlay) return;
+
+  EmdrState.active = true;
+  EmdrState.startTime = Date.now();
+  EmdrState.phase = 0;
+  EmdrState.lastTimestamp = 0;
+  EmdrState.lastDirection = 1;
+  EmdrState.affirmationIdx = 0;
+
+  const timerEl = document.getElementById('emdr-timer');
+  if (timerEl) timerEl.textContent = '00:00';
+
+  const affirmEl = document.getElementById('emdr-affirmation');
+  if (affirmEl) {
+    affirmEl.style.opacity = '1';
+    affirmEl.textContent = EMDR_AFFIRMATIONS[0];
+  }
+
+  setEmdrSpeed(EmdrState.speed);
+  updateEmdrSoundButton();
+  overlay.classList.remove('hidden');
+
+  if (EmdrState.timerId) clearInterval(EmdrState.timerId);
+  EmdrState.timerId = setInterval(() => {
+    if (!EmdrState.active) return;
+    const elapsed = Math.floor((Date.now() - EmdrState.startTime) / 1000);
+    const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const secs = String(elapsed % 60).padStart(2, '0');
+    if (timerEl) timerEl.textContent = `${mins}:${secs}`;
+
+    // 9초마다 안정화 문구 부드럽게 전환
+    if (elapsed > 0 && elapsed % 9 === 0 && affirmEl) {
+      EmdrState.affirmationIdx = (EmdrState.affirmationIdx + 1) % EMDR_AFFIRMATIONS.length;
+      affirmEl.style.opacity = '0';
+      setTimeout(() => {
+        if (!EmdrState.active) return;
+        affirmEl.textContent = EMDR_AFFIRMATIONS[EmdrState.affirmationIdx];
+        affirmEl.style.opacity = '1';
+      }, 350);
+    }
+  }, 1000);
+
+  if (EmdrState.rafId) cancelAnimationFrame(EmdrState.rafId);
+  EmdrState.rafId = requestAnimationFrame(animateEmdrOrb);
+}
+
+function animateEmdrOrb(timestamp) {
+  if (!EmdrState.active) return;
+
+  if (!EmdrState.lastTimestamp) {
+    EmdrState.lastTimestamp = timestamp;
+  }
+  const dt = Math.min(50, timestamp - EmdrState.lastTimestamp);
+  EmdrState.lastTimestamp = timestamp;
+
+  const halfCycleMs = EMDR_SPEED_MS[EmdrState.speed] || 1150;
+  EmdrState.phase += (dt / halfCycleMs) * Math.PI;
+
+  // sin 파형의 방향 전환 시점(상단/하단 끝점) 감지 -> 양측성 사운드/햅틱 트리거
+  const cosVal = Math.cos(EmdrState.phase);
+  const currentDirection = cosVal >= 0 ? 1 : -1;
+  if (currentDirection !== EmdrState.lastDirection) {
+    EmdrState.lastDirection = currentDirection;
+    // 가로로 눕혔을 때 상단(top)=좌측(-0.85) 또는 하단(bottom)=우측(+0.85)
+    const pan = currentDirection < 0 ? -0.85 : 0.85;
+    playEmdrBilateralTone(pan);
+    if (AppState.hapticsEnabled && navigator.vibrate) {
+      try { navigator.vibrate(25); } catch (e) {}
+    }
+  }
+
+  // 상하 8% ~ 92% 구간 부드러운 사인곡선 왕복
+  const norm = 0.5 - 0.5 * Math.cos(EmdrState.phase);
+  const yPercent = 8 + norm * 84;
+  const orb = document.getElementById('emdr-orb');
+  if (orb) {
+    orb.style.top = `${yPercent.toFixed(2)}%`;
+  }
+
+  EmdrState.rafId = requestAnimationFrame(animateEmdrOrb);
+}
+
+function setEmdrSpeed(speed) {
+  if (!EMDR_SPEED_MS[speed]) return;
+  EmdrState.speed = speed;
+  ['slow', 'normal', 'fast'].forEach((key) => {
+    const btn = document.getElementById(`emdr-speed-${key}`);
+    if (!btn) return;
+    if (key === speed) {
+      btn.className = 'emdr-speed-btn px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-600/40 text-cyan-200 border border-cyan-500/50';
+    } else {
+      btn.className = 'emdr-speed-btn px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400';
+    }
+  });
+}
+
+function toggleEmdrSound() {
+  EmdrState.soundEnabled = !EmdrState.soundEnabled;
+  if (EmdrState.soundEnabled) initAudioEngine();
+  updateEmdrSoundButton();
+}
+
+function updateEmdrSoundButton() {
+  const btn = document.getElementById('emdr-sound-btn');
+  if (!btn) return;
+  if (EmdrState.soundEnabled) {
+    btn.textContent = '🔊 좌우음향';
+    btn.className = 'px-2.5 py-1 rounded-full bg-slate-800 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold whitespace-nowrap';
+  } else {
+    btn.textContent = '🔇 무음';
+    btn.className = 'px-2.5 py-1 rounded-full bg-slate-900 text-slate-500 border border-slate-700 text-[10px] font-bold whitespace-nowrap';
+  }
+}
+
+function playEmdrBilateralTone(pan) {
+  if (!EmdrState.soundEnabled || !AppState.audioCtx) return;
+  try {
+    const ctx = AppState.audioCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    // 좌측(396Hz) / 우측(432Hz) 부드러운 저자극 힐링 톤
+    osc.frequency.setValueAtTime(pan < 0 ? 396 : 432, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.08, now + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+    if (typeof ctx.createStereoPanner === 'function') {
+      const panner = ctx.createStereoPanner();
+      panner.pan.setValueAtTime(pan, now);
+      osc.connect(gain);
+      gain.connect(panner);
+      panner.connect(ctx.destination);
+    } else {
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+    }
+
+    osc.start(now);
+    osc.stop(now + 0.18);
+  } catch (e) {}
+}
+
+function stopEmdrSession(completed) {
+  EmdrState.active = false;
+  if (EmdrState.rafId) {
+    cancelAnimationFrame(EmdrState.rafId);
+    EmdrState.rafId = null;
+  }
+  if (EmdrState.timerId) {
+    clearInterval(EmdrState.timerId);
+    EmdrState.timerId = null;
+  }
+
+  const overlay = document.getElementById('emdr-overlay');
+  if (overlay) overlay.classList.add('hidden');
+
+  const elapsedSec = EmdrState.startTime ? Math.floor((Date.now() - EmdrState.startTime) / 1000) : 0;
+  if (completed && elapsedSec >= 15) {
+    AppState.sessionStartTime = EmdrState.startTime;
+    AppState.lastSessionDuration = elapsedSec;
+    openPostCheckinModal();
+  }
+}

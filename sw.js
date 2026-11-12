@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v8.8-default-male-voice';
+const CACHE_NAME = 'dolboni-v8.9-emdr-mode';
 const PRECACHE_URLS = [
   './',
   './index.html',
