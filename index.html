@@ -410,13 +410,13 @@
     <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5 w-full max-w-sm shadow-2xl">
       <div class="text-center mb-3">
         <span class="text-2xl">✨</span>
-        <h3 class="text-base font-black text-white mt-1">4-4-6 호흡을 마쳤습니다!</h3>
+        <h3 id="post-checkin-title" class="text-base font-black text-white mt-1">4-4-6 호흡을 마쳤습니다!</h3>
         <p class="text-xs text-slate-400">지금 느껴지는 긴장도를 체크해 주세요</p>
       </div>
 
       <div class="my-3 bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/60">
         <div class="flex justify-between items-center mb-1.5">
-          <label class="text-xs font-bold text-slate-300">호흡 후 긴장도</label>
+          <label id="post-checkin-label" class="text-xs font-bold text-slate-300">호흡 후 긴장도</label>
           <span id="post-arousal-val" class="text-xs font-black text-emerald-400">3점 (안정됨)</span>
         </div>
         <input type="range" id="post-arousal-slider" min="1" max="10" value="3" oninput="updatePostArousalLabel(this.value)" class="w-full accent-emerald-500 bg-slate-700 h-2 rounded-lg cursor-pointer">
@@ -558,6 +558,13 @@
 
   <!-- ==================== EMDR 안구운동 안정화 케어 전체화면 오버레이 ==================== -->
   <div id="emdr-overlay" class="fixed inset-0 z-50 bg-black hidden select-none overflow-hidden touch-none">
+    <!-- 중앙 고개 고정 기준점 (시선이 지나가는 중심 앵커로 고개 흔들림 방지) -->
+    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center justify-center opacity-35">
+      <div class="w-3 h-3 rounded-full border border-slate-500 flex items-center justify-center">
+        <div class="w-1 h-1 rounded-full bg-slate-400"></div>
+      </div>
+    </div>
+
     <!-- 중앙 수직 트랙 & 발광 흰 점 (폰을 가로로 눕히면 좌우 왕복 안구운동으로 동작) -->
     <div id="emdr-orb" class="absolute left-1/2 w-8 h-8 rounded-full bg-white pointer-events-none"
       style="top: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 22px 6px rgba(255, 255, 255, 0.9), 0 0 56px 16px rgba(56, 189, 248, 0.45);">
@@ -566,9 +573,9 @@
     <!-- 가로 모드용 90도 회전 안정화 문구 배너 (화면 우측 -> 가로로 보면 상단) -->
     <div class="absolute pointer-events-none flex flex-col items-center justify-center text-center"
       style="left: calc(100% - 46px); top: 50%; width: 82vh; transform: translate(-50%, -50%) rotate(90deg);">
-      <span class="text-[10px] font-bold tracking-widest text-cyan-400/70 uppercase mb-1">EMDR 안구운동 안정화 케어 (BLS)</span>
+      <span class="text-[10px] font-bold tracking-widest text-cyan-400/70 uppercase mb-1">EMDR 안구운동 안정화 · 고개 고정</span>
       <p id="emdr-affirmation" class="text-sm sm:text-base font-bold text-slate-200/90 leading-snug transition-opacity duration-500">
-        휴대폰을 가로로 눕혀 시선으로 흰 점을 따라가세요
+        휴대폰을 가로로 눕히고 고개는 고정한 채 눈동자만 움직이세요
       </p>
     </div>
 
@@ -578,15 +585,15 @@
       <div class="flex items-center gap-2">
         <span id="emdr-timer" class="text-xs font-mono font-bold text-cyan-300 w-11 text-center">00:00</span>
         <div class="flex items-center gap-1 bg-black/60 rounded-full p-0.5 border border-slate-800">
-          <button type="button" onclick="setEmdrSpeed('slow')" id="emdr-speed-slow" class="emdr-speed-btn px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400">느리게</button>
-          <button type="button" onclick="setEmdrSpeed('normal')" id="emdr-speed-normal" class="emdr-speed-btn px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-600/40 text-cyan-200 border border-cyan-500/50">보통</button>
+          <button type="button" onclick="setEmdrSpeed('slow')" id="emdr-speed-slow" class="emdr-speed-btn px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-600/40 text-cyan-200 border border-cyan-500/50">느리게</button>
+          <button type="button" onclick="setEmdrSpeed('normal')" id="emdr-speed-normal" class="emdr-speed-btn px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400">보통</button>
           <button type="button" onclick="setEmdrSpeed('fast')" id="emdr-speed-fast" class="emdr-speed-btn px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400">빠르게</button>
         </div>
       </div>
 
       <div class="flex items-center gap-1.5">
         <button type="button" onclick="toggleEmdrSound()" id="emdr-sound-btn" class="px-2.5 py-1 rounded-full bg-slate-800 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold whitespace-nowrap">
-          🔊 좌우음향
+          🔊 음향/음성
         </button>
         <button type="button" onclick="stopEmdrSession(true)" class="px-3 py-1 rounded-full bg-rose-600/85 hover:bg-rose-600 text-white text-[10px] font-black whitespace-nowrap">
           ✕ 종료

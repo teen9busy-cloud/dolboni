@@ -552,7 +552,16 @@ function updatePostArousalLabel(val) {
   el.textContent = `${val}점 (${val <= 4 ? '안정됨' : val <= 7 ? '보통' : '긴장 잔류'})`;
 }
 
-function openPostCheckinModal() {
+function openPostCheckinModal(mode = 'breathing') {
+  const titleEl = document.getElementById('post-checkin-title');
+  const labelEl = document.getElementById('post-checkin-label');
+  if (mode === 'emdr') {
+    if (titleEl) titleEl.textContent = 'EMDR 안정화 케어를 마쳤습니다!';
+    if (labelEl) labelEl.textContent = '안구운동 후 긴장도';
+  } else {
+    if (titleEl) titleEl.textContent = '4-4-6 호흡을 마쳤습니다!';
+    if (labelEl) labelEl.textContent = '호흡 후 긴장도';
+  }
   document.getElementById('modal-post-checkin').classList.remove('hidden');
 }
 
@@ -1265,9 +1274,9 @@ const EMDR_SPEED_MS = {
 };
 
 const EMDR_AFFIRMATIONS = [
-  '휴대폰을 가로로 눕혀 시선으로 흰 점을 따라가세요',
+  '휴대폰을 가로로 눕히고 고개는 고정한 채 눈동자만 움직이세요',
+  '턱과 고개는 멈춘 상태로, 시선으로만 흰 점을 따라갑니다',
   '지금 이 순간, 당신은 안전한 곳에 있습니다',
-  '고개는 고정하고 눈동자만 좌우로 편안히 움직입니다',
   '현장의 긴장이 호흡과 함께 서서히 빠져나갑니다',
   '그 현장은 이미 안전하게 끝났습니다',
   '오늘도 동료와 시민을 위해 최선을 다했습니다',
@@ -1279,13 +1288,32 @@ const EmdrState = {
   rafId: null,
   timerId: null,
   startTime: 0,
-  speed: 'normal',
+  speed: 'slow',
   soundEnabled: true,
   phase: 0,
   lastTimestamp: 0,
   lastDirection: 1,
   affirmationIdx: 0
 };
+
+function speakEmdrAffirmation(text) {
+  if (!EmdrState.soundEnabled || !AppState.voiceEnabled) return;
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'ko-KR';
+    utter.rate = 0.88;
+    utter.pitch = 0.92;
+    utter.volume = 1.0;
+
+    const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+    const koVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ko'));
+    if (koVoice) utter.voice = koVoice;
+
+    window.speechSynthesis.speak(utter);
+  } catch (e) {}
+}
 
 function startEmdrSession() {
   if (AppState.isBreathing) {
@@ -1316,6 +1344,9 @@ function startEmdrSession() {
   updateEmdrSoundButton();
   overlay.classList.remove('hidden');
 
+  // 사용자 터치 컨텍스트 안에서 즉시 첫 한국어 음성 안내 시작 (iOS/안드로이드 호환)
+  speakEmdrAffirmation(EMDR_AFFIRMATIONS[0]);
+
   if (EmdrState.timerId) clearInterval(EmdrState.timerId);
   EmdrState.timerId = setInterval(() => {
     if (!EmdrState.active) return;
@@ -1324,14 +1355,16 @@ function startEmdrSession() {
     const secs = String(elapsed % 60).padStart(2, '0');
     if (timerEl) timerEl.textContent = `${mins}:${secs}`;
 
-    // 9초마다 안정화 문구 부드럽게 전환
+    // 9초마다 안정화 문구 및 음성 안내 부드럽게 전환
     if (elapsed > 0 && elapsed % 9 === 0 && affirmEl) {
       EmdrState.affirmationIdx = (EmdrState.affirmationIdx + 1) % EMDR_AFFIRMATIONS.length;
+      const nextText = EMDR_AFFIRMATIONS[EmdrState.affirmationIdx];
       affirmEl.style.opacity = '0';
       setTimeout(() => {
         if (!EmdrState.active) return;
-        affirmEl.textContent = EMDR_AFFIRMATIONS[EmdrState.affirmationIdx];
+        affirmEl.textContent = nextText;
         affirmEl.style.opacity = '1';
+        speakEmdrAffirmation(nextText);
       }, 350);
     }
   }, 1000);
@@ -1349,7 +1382,7 @@ function animateEmdrOrb(timestamp) {
   const dt = Math.min(50, timestamp - EmdrState.lastTimestamp);
   EmdrState.lastTimestamp = timestamp;
 
-  const halfCycleMs = EMDR_SPEED_MS[EmdrState.speed] || 1150;
+  const halfCycleMs = EMDR_SPEED_MS[EmdrState.speed] || 1800;
   EmdrState.phase += (dt / halfCycleMs) * Math.PI;
 
   // sin 파형의 방향 전환 시점(상단/하단 끝점) 감지 -> 양측성 사운드/햅틱 트리거
@@ -1365,9 +1398,9 @@ function animateEmdrOrb(timestamp) {
     }
   }
 
-  // 상하 8% ~ 92% 구간 부드러운 사인곡선 왕복
+  // 상하 14% ~ 86% 구간 왕복 (고개를 돌리지 않고 눈동자만 편히 움직이는 최적 시야각)
   const norm = 0.5 - 0.5 * Math.cos(EmdrState.phase);
-  const yPercent = 8 + norm * 84;
+  const yPercent = 14 + norm * 72;
   const orb = document.getElementById('emdr-orb');
   if (orb) {
     orb.style.top = `${yPercent.toFixed(2)}%`;
@@ -1392,7 +1425,11 @@ function setEmdrSpeed(speed) {
 
 function toggleEmdrSound() {
   EmdrState.soundEnabled = !EmdrState.soundEnabled;
-  if (EmdrState.soundEnabled) initAudioEngine();
+  if (EmdrState.soundEnabled) {
+    initAudioEngine();
+  } else if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+  }
   updateEmdrSoundButton();
 }
 
@@ -1400,7 +1437,7 @@ function updateEmdrSoundButton() {
   const btn = document.getElementById('emdr-sound-btn');
   if (!btn) return;
   if (EmdrState.soundEnabled) {
-    btn.textContent = '🔊 좌우음향';
+    btn.textContent = '🔊 음향/음성';
     btn.className = 'px-2.5 py-1 rounded-full bg-slate-800 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold whitespace-nowrap';
   } else {
     btn.textContent = '🔇 무음';
@@ -1423,8 +1460,8 @@ function playEmdrBilateralTone(pan) {
     osc.frequency.setValueAtTime(pan < 0 ? 396 : 432, now);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.08, now + 0.025);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    gain.gain.exponentialRampToValueAtTime(0.22, now + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
 
     if (typeof ctx.createStereoPanner === 'function') {
       const panner = ctx.createStereoPanner();
@@ -1438,7 +1475,7 @@ function playEmdrBilateralTone(pan) {
     }
 
     osc.start(now);
-    osc.stop(now + 0.18);
+    osc.stop(now + 0.20);
   } catch (e) {}
 }
 
@@ -1452,6 +1489,9 @@ function stopEmdrSession(completed) {
     clearInterval(EmdrState.timerId);
     EmdrState.timerId = null;
   }
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+  }
 
   const overlay = document.getElementById('emdr-overlay');
   if (overlay) overlay.classList.add('hidden');
@@ -1460,6 +1500,6 @@ function stopEmdrSession(completed) {
   if (completed && elapsedSec >= 15) {
     AppState.sessionStartTime = EmdrState.startTime;
     AppState.lastSessionDuration = elapsedSec;
-    openPostCheckinModal();
+    openPostCheckinModal('emdr');
   }
 }
