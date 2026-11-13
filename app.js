@@ -553,6 +553,7 @@ function updatePostArousalLabel(val) {
 }
 
 function openPostCheckinModal(mode = 'breathing') {
+  AppState.activeProgramType = mode === 'emdr' ? 'EMDR 안구운동' : '4-4-6 공명 호흡';
   const titleEl = document.getElementById('post-checkin-title');
   const labelEl = document.getElementById('post-checkin-label');
   if (mode === 'emdr') {
@@ -568,10 +569,11 @@ function openPostCheckinModal(mode = 'breathing') {
 function confirmPostCheckinAndSave() {
   document.getElementById('modal-post-checkin').classList.add('hidden');
 
+  const sessionMode = AppState.activeProgramType || '4-4-6 공명 호흡';
   const duration = AppState.lastSessionDuration || 60;
   const tensionDrop = Math.max(0, AppState.preArousal - AppState.postArousal);
 
-  // 마일리지 계산 (기본 50P + 1분 초과당 10P + 긴장완화 2점 이상 20P)
+  // 돌 마일리지 계산 (기본 50돌 + 1분 초과당 10돌 + 긴장완화 2점 이상 20돌)
   let earnedPoints = 50;
   if (duration > 60) {
     const extraMinutes = Math.min(4, Math.floor((duration - 60) / 60));
@@ -583,7 +585,7 @@ function confirmPostCheckinAndSave() {
 
   // 1. 비회원(게스트)인 경우:
   if (!AppState.user.isVerified) {
-    // 공식 마일리지는 적립하지 않고, '임시 체험 포인트'로 로컬 누적
+    // 공식 마일리지는 적립하지 않고, '임시 체험 포인트(돌)'로 로컬 누적
     AppState.guestPoints += earnedPoints;
     AppState.totalSessionsCount += 1;
     AppState.totalHealingMinutes += Math.round(duration / 60);
@@ -591,7 +593,7 @@ function confirmPostCheckinAndSave() {
     // 비회원 긴장도 시계열 데이터 로컬 배열에 안전 보관 (인증 시 일괄 이관용)
     const guestSessions = JSON.parse(localStorage.getItem('dolboni_guest_sessions_v7') || '[]');
     guestSessions.push({
-      program_type: '4-4-6 공명 호흡',
+      program_type: sessionMode,
       duration_seconds: duration,
       pre_arousal: AppState.preArousal,
       post_arousal: AppState.postArousal,
@@ -605,7 +607,7 @@ function confirmPostCheckinAndSave() {
 
     saveStatsToStorage();
     updateHeaderUI();
-    showGuestRewardToast(earnedPoints, tensionDrop, duration, AppState.guestPoints);
+    showGuestRewardToast(earnedPoints, tensionDrop, duration, AppState.guestPoints, sessionMode === 'EMDR 안구운동' ? 'emdr' : 'breathing');
 
     // 첫 세션 완료 골든타임: A2HS 설치 제안
     suggestA2hsAfterSession();
@@ -627,10 +629,10 @@ function confirmPostCheckinAndSave() {
   saveStatsToStorage();
   saveUserToStorage();
   updateHeaderUI();
-  showRewardToast(earnedPoints, tensionDrop, duration);
+  showRewardToast(earnedPoints, tensionDrop, duration, sessionMode === 'EMDR 안구운동' ? 'emdr' : 'breathing');
 
   // Supabase 원격 DB 실시간 전송
-  syncSessionToSupabase(duration, AppState.preArousal, AppState.postArousal, tensionDrop, earnedPoints);
+  syncSessionToSupabase(duration, AppState.preArousal, AppState.postArousal, tensionDrop, earnedPoints, sessionMode);
 
   // 세션 완료 골든타임: A2HS 설치 제안
   suggestA2hsAfterSession();
@@ -660,19 +662,20 @@ async function syncSessionToSupabase(duration, pre, post, drop, points) {
 // ------------------------------------------------------------------------------
 // 9. 리워드 토스트 알림
 // ------------------------------------------------------------------------------
-function showRewardToast(points, drop, duration) {
+function showRewardToast(points, drop, duration, mode = 'breathing') {
   const container = document.getElementById('dolboni-toast-container');
   const toast = document.createElement('div');
   toast.className = 'pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300 ease-out flex items-center gap-3 px-4 py-3 bg-slate-900 border border-emerald-500/60 text-white rounded-2xl shadow-2xl backdrop-blur-md';
 
   const dropText = drop > 0 ? ` (긴장도 ${drop}점 완화!)` : '';
   const minText = Math.floor(duration / 60) > 0 ? `${Math.floor(duration / 60)}분 ` : '';
-  const secText = `${duration % 60}초 호흡`;
+  const modeTitle = mode === 'emdr' ? 'EMDR 케어' : '4-4-6 호흡';
+  const secText = `${duration % 60}초 ${modeTitle}`;
 
   toast.innerHTML = `
-    <div class="w-8 h-8 rounded-full bg-emerald-500/25 text-emerald-400 flex items-center justify-center font-black text-sm">✓</div>
+    <div class="w-8 h-8 rounded-full bg-emerald-500/25 text-emerald-400 flex items-center justify-center font-black text-sm">🪨</div>
     <div>
-      <p class="font-black text-xs text-emerald-300">+${points} 마일리지가 적립되었습니다!</p>
+      <p class="font-black text-xs text-emerald-300">+${points} 돌 마일리지가 적립되었습니다!</p>
       <p class="text-[11px] text-slate-300 font-medium">${minText}${secText} 완료${dropText}</p>
     </div>
   `;
@@ -684,20 +687,21 @@ function showRewardToast(points, drop, duration) {
   }, 4000);
 }
 
-function showGuestRewardToast(points, drop, duration, totalGuest) {
+function showGuestRewardToast(points, drop, duration, totalGuest, mode = 'breathing') {
   const container = document.getElementById('dolboni-toast-container');
   const toast = document.createElement('div');
   toast.className = 'pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300 ease-out flex items-center gap-3 px-4 py-3 bg-slate-900 border border-blue-500/60 text-white rounded-2xl shadow-2xl backdrop-blur-md cursor-pointer';
   toast.onclick = () => openAuthModal();
 
   const dropText = drop > 0 ? ` (긴장도 ${drop}점 완화!)` : '';
+  const modeTitle = mode === 'emdr' ? 'EMDR 안정화 케어를 마쳤습니다!' : '4-4-6 호흡을 마쳤습니다!';
 
   toast.innerHTML = `
-    <div class="w-8 h-8 rounded-full bg-blue-500/25 text-blue-400 flex items-center justify-center font-black text-sm">✨</div>
+    <div class="w-8 h-8 rounded-full bg-blue-500/25 text-blue-400 flex items-center justify-center font-black text-sm">🪨</div>
     <div>
-      <p class="font-black text-xs text-blue-300">4-4-6 호흡을 마쳤습니다!${dropText}</p>
+      <p class="font-black text-xs text-blue-300">${modeTitle}${dropText}</p>
       <p class="text-[10px] text-slate-300 mt-0.5">
-        👉 <strong>소방관 인증하기</strong>를 누르면 누적 <strong>${totalGuest}P</strong>가 관서 마일리지로 즉시 전환됩니다!
+        👉 <strong>소방관 인증하기</strong>를 누르면 쌓아둔 <strong>${totalGuest}돌</strong>이 관서 마일리지로 즉시 전환됩니다!
       </p>
     </div>
   `;
@@ -1042,10 +1046,10 @@ function updateHeaderUI() {
   const textEl = document.getElementById('user-affiliation-text');
 
   if (AppState.user.isVerified) {
-    pointsVal.textContent = `${AppState.user.totalPoints.toLocaleString()} P`;
+    pointsVal.textContent = `${AppState.user.totalPoints.toLocaleString()} 돌`;
     textEl.textContent = `${AppState.user.name} (${AppState.user.station} ${AppState.user.team})`;
   } else {
-    pointsVal.textContent = AppState.guestPoints > 0 ? `체험 ${AppState.guestPoints} P` : '0 P';
+    pointsVal.textContent = AppState.guestPoints > 0 ? `체험 ${AppState.guestPoints} 돌` : '0 돌';
     textEl.textContent = '게스트 모드 (소방관 인증하기 ➜)';
   }
 

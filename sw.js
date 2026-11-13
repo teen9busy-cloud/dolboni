@@ -1,9 +1,11 @@
-const CACHE_NAME = 'dolboni-v9.1-emdr-neural-male-voice';
+const CACHE_NAME = 'dolboni-v9.2-local-bundle-dol-mileage';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './app.js',
   './studio.html',
+  './tailwind.js',
+  './supabase.js',
   './dolboni_config.json',
   './manifest.json',
   './icon-192.png',

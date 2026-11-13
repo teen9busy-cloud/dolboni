@@ -35,11 +35,25 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" href="icon-192.png">
 
-  <!-- Tailwind CSS & Supabase JS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Tailwind CSS & Supabase JS (외부 CDN 장애/오프라인 대비 로컬 번들링 우선 로드) -->
+  <script src="tailwind.js"></script>
+  <script src="supabase.js"></script>
+  <script>
+    // 로컬 스크립트 실패 시 CDN fallback
+    if (typeof tailwind === 'undefined') {
+      document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+    }
+  </script>
 
   <style>
+    /* CSS 로드 지연 시에도 깨짐 방지 기본 리셋 */
+    * { box-sizing: border-box; }
+    svg { max-width: 100%; max-height: 100%; }
+    .w-3\.5 { width: 14px !important; height: 14px !important; }
+    .w-4 { width: 16px !important; height: 16px !important; }
+    .w-5 { width: 20px !important; height: 20px !important; }
+    .w-6 { width: 24px !important; height: 24px !important; }
+
     /* 모바일 전체화면 원스크린 레이아웃 (스크롤 없이 한 화면에 쏙 들어가도록 설계) */
     html, body {
       height: 100%;
@@ -102,13 +116,11 @@
       </div>
     </div>
 
-    <!-- 마음건강 마일리지 배지 -->
+    <!-- 마음건강 마일리지 배지 (돌 마일리지 DOL) -->
     <div id="dolboni-header-points-badge" class="cursor-pointer" onclick="openPointsHistoryModal()">
       <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500/15 border border-amber-500/40 rounded-full text-amber-400 font-extrabold text-xs shadow-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
-        <span id="header-points-value">0 P</span>
+        <span class="text-xs">🪨</span>
+        <span id="header-points-value">0 돌</span>
       </div>
     </div>
   </header>
@@ -423,7 +435,7 @@
       </div>
 
       <button type="button" onclick="confirmPostCheckinAndSave()" class="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-sm shadow-md">
-        완료하고 마일리지 적립하기
+        완료하고 🪨 돌 마일리지 적립하기
       </button>
     </div>
   </div>
