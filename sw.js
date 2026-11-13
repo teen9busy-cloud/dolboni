@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v9.2-local-bundle-dol-mileage';
+const CACHE_NAME = 'dolboni-v9.3-hide-soundlab';
 const PRECACHE_URLS = [
   './',
   './index.html',
