@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v9.0-emdr-voice-slow-default';
+const CACHE_NAME = 'dolboni-v9.1-emdr-neural-male-voice';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -27,6 +27,13 @@ const PRECACHE_URLS = [
   './audio/voice_male_injoon_hold.mp3',
   './audio/voice_male_injoon_exhale.mp3',
   './audio/voice_male_injoon_complete.mp3',
+  './audio/voice_emdr_0.mp3',
+  './audio/voice_emdr_1.mp3',
+  './audio/voice_emdr_2.mp3',
+  './audio/voice_emdr_3.mp3',
+  './audio/voice_emdr_4.mp3',
+  './audio/voice_emdr_5.mp3',
+  './audio/voice_emdr_6.mp3',
   'https://cdn.tailwindcss.com',
 ];
 

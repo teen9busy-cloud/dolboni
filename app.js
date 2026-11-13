@@ -1296,23 +1296,49 @@ const EmdrState = {
   affirmationIdx: 0
 };
 
-function speakEmdrAffirmation(text) {
+function speakEmdrAffirmation(text, index = 0) {
   if (!EmdrState.soundEnabled || !AppState.voiceEnabled) return;
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-  try {
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'ko-KR';
-    utter.rate = 0.88;
-    utter.pitch = 0.92;
-    utter.volume = 1.0;
+  initAudioEngine();
+  stopVoice();
 
-    const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
-    const koVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ko'));
-    if (koVoice) utter.voice = koVoice;
+  // 1. 호흡명상과 동일한 남성 성우(현수 Neural) MP3 음원 우선 재생 (0.90x 속도, +50 cents 피치 동일 적용)
+  const soundUrl = `audio/voice_emdr_${index}.mp3`;
+  loadAudioBuffer(soundUrl).then((buffer) => {
+    if (!EmdrState.active || !buffer || !AppState.audioCtx) return;
+    try {
+      const source = AppState.audioCtx.createBufferSource();
+      source.buffer = buffer;
 
-    window.speechSynthesis.speak(utter);
-  } catch (e) {}
+      const speed = parseFloat(localStorage.getItem('dolboni_voice_rate') || '0.90');
+      const pitch = parseFloat(localStorage.getItem('dolboni_voice_detune') || '50');
+      source.playbackRate.value = speed;
+      if (source.detune) {
+        source.detune.value = pitch;
+      }
+
+      source.connect(AppState.voiceGain);
+      source.onended = () => {
+        if (AppState.voiceSource === source) AppState.voiceSource = null;
+      };
+      source.start(0);
+      AppState.voiceSource = source;
+    } catch (e) {
+      console.warn('EMDR audio playback error:', e);
+    }
+  }).catch(() => {
+    // 음원 로드 실패 시에만 fallback으로 브라우저 TTS 실행
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'ko-KR';
+        utter.rate = 0.88;
+        utter.pitch = 0.92;
+        utter.volume = 1.0;
+        window.speechSynthesis.speak(utter);
+      } catch (e) {}
+    }
+  });
 }
 
 function startEmdrSession() {
@@ -1344,8 +1370,8 @@ function startEmdrSession() {
   updateEmdrSoundButton();
   overlay.classList.remove('hidden');
 
-  // 사용자 터치 컨텍스트 안에서 즉시 첫 한국어 음성 안내 시작 (iOS/안드로이드 호환)
-  speakEmdrAffirmation(EMDR_AFFIRMATIONS[0]);
+  // 사용자 터치 컨텍스트 안에서 즉시 첫 한국어 음성 안내 시작 (호흡명상과 동일한 남성 성우)
+  speakEmdrAffirmation(EMDR_AFFIRMATIONS[0], 0);
 
   if (EmdrState.timerId) clearInterval(EmdrState.timerId);
   EmdrState.timerId = setInterval(() => {
@@ -1358,13 +1384,14 @@ function startEmdrSession() {
     // 9초마다 안정화 문구 및 음성 안내 부드럽게 전환
     if (elapsed > 0 && elapsed % 9 === 0 && affirmEl) {
       EmdrState.affirmationIdx = (EmdrState.affirmationIdx + 1) % EMDR_AFFIRMATIONS.length;
-      const nextText = EMDR_AFFIRMATIONS[EmdrState.affirmationIdx];
+      const nextIdx = EmdrState.affirmationIdx;
+      const nextText = EMDR_AFFIRMATIONS[nextIdx];
       affirmEl.style.opacity = '0';
       setTimeout(() => {
         if (!EmdrState.active) return;
         affirmEl.textContent = nextText;
         affirmEl.style.opacity = '1';
-        speakEmdrAffirmation(nextText);
+        speakEmdrAffirmation(nextText, nextIdx);
       }, 350);
     }
   }, 1000);
@@ -1489,6 +1516,7 @@ function stopEmdrSession(completed) {
     clearInterval(EmdrState.timerId);
     EmdrState.timerId = null;
   }
+  stopVoice();
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     try { window.speechSynthesis.cancel(); } catch (e) {}
   }
