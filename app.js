@@ -312,8 +312,7 @@ function updateVoiceSpeakerUI() {
   }
 }
 
-async function playBgm(type) {
-  AppState.currentBgm = type;
+function stopBgm() {
   if (AppState.bgmSource) {
     try {
       AppState.bgmSource.stop();
@@ -321,6 +320,11 @@ async function playBgm(type) {
     } catch (e) {}
     AppState.bgmSource = null;
   }
+}
+
+async function playBgm(type) {
+  AppState.currentBgm = type;
+  stopBgm();
 
   if (type === 'mute') return;
 
@@ -408,6 +412,7 @@ function stopBreathingSession() {
   AppState.isBreathing = false;
   if (AppState.timerInterval) clearInterval(AppState.timerInterval);
   stopVoice();
+  stopBgm();
 
   if (AppState.sessionStartTime) {
     AppState.lastSessionDuration = Math.max(1, Math.round((Date.now() - AppState.sessionStartTime) / 1000));
@@ -1349,6 +1354,8 @@ function startEmdrSession() {
   if (AppState.isBreathing) {
     stopBreathingSession();
   }
+  stopBgm();
+  stopVoice();
   initAudioEngine();
 
   const overlay = document.getElementById('emdr-overlay');
@@ -1416,12 +1423,12 @@ function animateEmdrOrb(timestamp) {
   const halfCycleMs = EMDR_SPEED_MS[EmdrState.speed] || 1800;
   EmdrState.phase += (dt / halfCycleMs) * Math.PI;
 
-  // sin 파형의 방향 전환 시점(상단/하단 끝점) 감지 -> 양측성 사운드/햅틱 트리거
+  // sin 파형의 방향 전환 시점(끝점) 감지 -> 양측성 사운드/햅틱 트리거
   const cosVal = Math.cos(EmdrState.phase);
   const currentDirection = cosVal >= 0 ? 1 : -1;
   if (currentDirection !== EmdrState.lastDirection) {
     EmdrState.lastDirection = currentDirection;
-    // 가로로 눕혔을 때 상단(top)=좌측(-0.85) 또는 하단(bottom)=우측(+0.85)
+    // 세로모드(상단=좌측, 하단=우측) 또는 가로모드(좌측, 우측) 패닝 사운드
     const pan = currentDirection < 0 ? -0.85 : 0.85;
     playEmdrBilateralTone(pan);
     if (AppState.hapticsEnabled && navigator.vibrate) {
@@ -1429,12 +1436,23 @@ function animateEmdrOrb(timestamp) {
     }
   }
 
-  // 상하 14% ~ 86% 구간 왕복 (고개를 돌리지 않고 눈동자만 편히 움직이는 최적 시야각)
+  // 브라우저 뷰포트 방향 감지: 실제 가로 모드(Landscape)인지 체크
+  const isLandscape = window.innerWidth > window.innerHeight;
   const norm = 0.5 - 0.5 * Math.cos(EmdrState.phase);
-  const yPercent = 14 + norm * 72;
   const orb = document.getElementById('emdr-orb');
+
   if (orb) {
-    orb.style.top = `${yPercent.toFixed(2)}%`;
+    if (isLandscape) {
+      // 1. 자동회전으로 실제 가로 모드가 된 경우: 좌 ⇄ 우 (14% ~ 86%) 수평 왕복
+      const xPercent = 14 + norm * 72;
+      orb.style.left = `${xPercent.toFixed(2)}%`;
+      orb.style.top = '50%';
+    } else {
+      // 2. 세로 회전잠금 상태에서 폰을 눕혀 보는 경우: 상 ⇄ 하 (14% ~ 86%) 수직 왕복
+      const yPercent = 14 + norm * 72;
+      orb.style.left = '50%';
+      orb.style.top = `${yPercent.toFixed(2)}%`;
+    }
   }
 
   EmdrState.rafId = requestAnimationFrame(animateEmdrOrb);

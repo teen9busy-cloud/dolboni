@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dolboni-v9.3-hide-soundlab';
+const CACHE_NAME = 'dolboni-v9.4-emdr-smart-orientation-bgm-clean';
 const PRECACHE_URLS = [
   './',
   './index.html',

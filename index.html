@@ -80,6 +80,44 @@
     .custom-scroll::-webkit-scrollbar {
       display: none;
     }
+
+    /* ==========================================================================
+       EMDR 안구운동 화면 방향 자동 반응형 스타일 (세로 회전잠금 vs 가로 자동회전 완벽 대응)
+       ========================================================================== */
+    /* 1. 기본 세로 모드 (Portrait): 사용자가 회전 잠금 상태에서 폰을 옆으로 눕혀 볼 때 */
+    .emdr-banner {
+      left: calc(100% - 46px);
+      top: 50%;
+      width: 82vh;
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+    .emdr-controls {
+      left: 30px;
+      top: 50%;
+      width: 84vh;
+      max-width: 520px;
+      height: 42px;
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+
+    /* 2. 자동회전 가로 모드 (Landscape): 폰 브라우저 자체가 실제 가로로 회전되었을 때 */
+    @media (orientation: landscape) {
+      .emdr-banner {
+        left: 50% !important;
+        top: 24px !important;
+        width: 90vw !important;
+        transform: translate(-50%, 0) rotate(0deg) !important;
+      }
+      .emdr-controls {
+        left: 50% !important;
+        top: auto !important;
+        bottom: 16px !important;
+        width: 92vw !important;
+        max-width: 580px !important;
+        height: 42px !important;
+        transform: translate(-50%, 0) rotate(0deg) !important;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 flex flex-col justify-between font-sans antialiased">
@@ -570,23 +608,21 @@
       </div>
     </div>
 
-    <!-- 중앙 수직 트랙 & 발광 흰 점 (폰을 가로로 눕히면 좌우 왕복 안구운동으로 동작) -->
+    <!-- 중앙 발광 흰 점 (세로모드: 상하 왕복 / 가로모드: 좌우 왕복 자동 전환) -->
     <div id="emdr-orb" class="absolute left-1/2 w-8 h-8 rounded-full bg-white pointer-events-none"
       style="top: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 22px 6px rgba(255, 255, 255, 0.9), 0 0 56px 16px rgba(56, 189, 248, 0.45);">
     </div>
 
-    <!-- 가로 모드용 90도 회전 안정화 문구 배너 (화면 우측 -> 가로로 보면 상단) -->
-    <div class="absolute pointer-events-none flex flex-col items-center justify-center text-center"
-      style="left: calc(100% - 46px); top: 50%; width: 82vh; transform: translate(-50%, -50%) rotate(90deg);">
+    <!-- 반응형 안정화 문구 배너 (세로모드: 90도 회전 / 가로모드: 상단 정방향) -->
+    <div class="emdr-banner absolute pointer-events-none flex flex-col items-center justify-center text-center">
       <span class="text-[10px] font-bold tracking-widest text-cyan-400/70 uppercase mb-1">EMDR 안구운동 안정화 · 고개 고정</span>
       <p id="emdr-affirmation" class="text-sm sm:text-base font-bold text-slate-200/90 leading-snug transition-opacity duration-500">
         휴대폰을 가로로 눕히고 고개는 고정한 채 눈동자만 움직이세요
       </p>
     </div>
 
-    <!-- 가로 모드용 90도 회전 컨트롤 바 (화면 좌측 -> 가로로 보면 하단) -->
-    <div class="absolute flex items-center justify-between gap-2 px-3 py-1.5 rounded-full bg-slate-900/75 border border-slate-800/90 backdrop-blur-md"
-      style="left: 30px; top: 50%; width: 84vh; max-width: 520px; height: 42px; transform: translate(-50%, -50%) rotate(90deg);">
+    <!-- 반응형 컨트롤 바 (세로모드: 90도 회전 / 가로모드: 하단 정방향) -->
+    <div class="emdr-controls absolute flex items-center justify-between gap-2 px-3 py-1.5 rounded-full bg-slate-900/75 border border-slate-800/90 backdrop-blur-md">
       <div class="flex items-center gap-2">
         <span id="emdr-timer" class="text-xs font-mono font-bold text-cyan-300 w-11 text-center">00:00</span>
         <div class="flex items-center gap-1 bg-black/60 rounded-full p-0.5 border border-slate-800">
