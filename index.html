@@ -633,15 +633,36 @@
   <!-- 토스트 컨테이너 -->
   <div id="dolboni-toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=9.1"></script>
   <script>
-    // PWA Service Worker 등록 (오프라인 캐싱)
+    // PWA Service Worker 등록 (오프라인 캐싱) 및 즉시 업데이트 감지
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then((reg) => {
           console.log('[Dolboni PWA] ServiceWorker registered:', reg.scope);
+          // 서버의 새 sw.js가 있는지 즉시 체크
+          reg.update();
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[Dolboni PWA] 새 버전 감지 - 즉시 교체 활성화');
+                }
+              });
+            }
+          });
         }).catch((err) => {
           console.warn('[Dolboni PWA] ServiceWorker failed:', err);
+        });
+
+        // 새 서비스 워커가 제어권을 잡으면 1회 즉시 자동 리로드
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
         });
       });
     }
